@@ -1,0 +1,1136 @@
+Name:             helm-operation-62xrk
+Namespace:        cattle-system
+Priority:         0
+Service Account:  default
+Node:             node-4/192.168.99.43
+Start Time:       Wed, 22 Jan 2025 18:04:17 -0500
+Labels:           pod-impersonation.cattle.io/token=vmmgxz8rj7sk2kp7sz9g5bcjtlpj6h2pn66xwjb8v97hczlzq222jb
+Annotations:      pod-impersonation.cattle.io/cluster-role: pod-impersonation-helm-op-g8p9h
+Status:           Succeeded
+IP:               10.42.6.11
+IPs:
+  IP:  10.42.6.11
+Init Containers:
+  init-kubeconfig-volume:
+    Container ID:  containerd://1ffe82c9f13c1557e254282c1d0175d2065257cb491ba463a421f403b05169ce
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      cp /home/.kube/config /tmp/.kube && chown 1000 /tmp/.kube/config
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:21 -0500
+      Finished:     Wed, 22 Jan 2025 18:04:21 -0500
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /home/.kube/config from user-kube-configmap (rw,path="config")
+      /tmp/.kube from user-kubeconfig (rw)
+Containers:
+  helm:
+    Container ID:  containerd://8d5b2e5c1372f1b8c7d506e37526f0cd4c31c33da08019b7fa6c85f40e5e1e66
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      helm-cmd
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:22 -0500
+      Finished:     Wed, 22 Jan 2025 18:04:39 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /home/shell/.kube/config
+    Mounts:
+      /home/shell/.kube/config from user-kubeconfig (rw,path="config")
+      /home/shell/helm from data (ro)
+  proxy:
+    Container ID:  containerd://fdae9eccf73b3a415d73d9aa5318e2e5b2f0a4f3f2ab5b66ed7fc97af9624576
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      kubectl proxy --disable-filter || true
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:22 -0500
+      Finished:     Wed, 22 Jan 2025 18:04:40 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /root/.kube/config
+    Mounts:
+      /root/.kube/config from admin-kubeconfig (ro,path="config")
+      /var/run/secrets/kubernetes.io/serviceaccount from pod-impersonation-helm-op-chgs4-token (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   False 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  data:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  helm-operation-f422j
+    Optional:    false
+  admin-kubeconfig:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-admin-kubeconfig-sjg6f
+    Optional:  false
+  user-kubeconfig:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  user-kube-configmap:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-user-kubeconfig-9xn2s
+    Optional:  false
+  pod-impersonation-helm-op-chgs4-token:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  pod-impersonation-helm-op-chgs4-token
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  kubernetes.io/os=linux
+Tolerations:     cattle.io/os=linux:NoSchedule
+                 node-role.kubernetes.io/controlplane=true:NoSchedule
+                 node-role.kubernetes.io/etcd=true:NoExecute
+                 node-role.kubernetes.io/master=true:NoSchedule
+                 node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                 node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  51m   default-scheduler  Successfully assigned cattle-system/helm-operation-62xrk to node-4
+  Normal  Pulling    51m   kubelet            Pulling image "rancher/shell:v0.3.0"
+  Normal  Pulled     51m   kubelet            Successfully pulled image "rancher/shell:v0.3.0" in 3.852s (3.852s including waiting). Image size: 99675128 bytes.
+  Normal  Created    51m   kubelet            Created container init-kubeconfig-volume
+  Normal  Started    51m   kubelet            Started container init-kubeconfig-volume
+  Normal  Pulled     51m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    51m   kubelet            Created container helm
+  Normal  Started    51m   kubelet            Started container helm
+  Normal  Pulled     51m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    51m   kubelet            Created container proxy
+  Normal  Started    51m   kubelet            Started container proxy
+
+
+Name:             helm-operation-f2pn9
+Namespace:        cattle-system
+Priority:         0
+Service Account:  default
+Node:             node-4/192.168.99.43
+Start Time:       Wed, 22 Jan 2025 18:04:49 -0500
+Labels:           pod-impersonation.cattle.io/token=42cstftmmmtnj9tnq6svknqt2r7wfqd9c6xqqr9vvjjchn287spvww
+Annotations:      pod-impersonation.cattle.io/cluster-role: pod-impersonation-helm-op-xrxjt
+Status:           Succeeded
+IP:               10.42.6.13
+IPs:
+  IP:  10.42.6.13
+Init Containers:
+  init-kubeconfig-volume:
+    Container ID:  containerd://a188185fb631ba83ab79e4ad18b35ad588d739123663ff62936a1f8e78715455
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      cp /home/.kube/config /tmp/.kube && chown 1000 /tmp/.kube/config
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:50 -0500
+      Finished:     Wed, 22 Jan 2025 18:04:50 -0500
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /home/.kube/config from user-kube-configmap (rw,path="config")
+      /tmp/.kube from user-kubeconfig (rw)
+Containers:
+  helm:
+    Container ID:  containerd://ac0a670504a00ecbda3ba60491ee10ea89f32c3e3a929b29050ed9d2346ea564
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      helm-cmd
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:50 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:14 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /home/shell/.kube/config
+    Mounts:
+      /home/shell/.kube/config from user-kubeconfig (rw,path="config")
+      /home/shell/helm from data (ro)
+  proxy:
+    Container ID:  containerd://cd14ace84a1162b9d899b2ceff2176fcdcdd6941dd6a8cd5c5ee216da6938896
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      kubectl proxy --disable-filter || true
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:50 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:14 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /root/.kube/config
+    Mounts:
+      /root/.kube/config from admin-kubeconfig (ro,path="config")
+      /var/run/secrets/kubernetes.io/serviceaccount from pod-impersonation-helm-op-vggwd-token (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   False 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  data:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  helm-operation-phjms
+    Optional:    false
+  admin-kubeconfig:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-admin-kubeconfig-jpjm6
+    Optional:  false
+  user-kubeconfig:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  user-kube-configmap:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-user-kubeconfig-7jfwn
+    Optional:  false
+  pod-impersonation-helm-op-vggwd-token:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  pod-impersonation-helm-op-vggwd-token
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  kubernetes.io/os=linux
+Tolerations:     cattle.io/os=linux:NoSchedule
+                 node-role.kubernetes.io/controlplane=true:NoSchedule
+                 node-role.kubernetes.io/etcd=true:NoExecute
+                 node-role.kubernetes.io/master=true:NoSchedule
+                 node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                 node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  50m   default-scheduler  Successfully assigned cattle-system/helm-operation-f2pn9 to node-4
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container init-kubeconfig-volume
+  Normal  Started    50m   kubelet            Started container init-kubeconfig-volume
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container helm
+  Normal  Started    50m   kubelet            Started container helm
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container proxy
+  Normal  Started    50m   kubelet            Started container proxy
+
+
+Name:             helm-operation-fxxbz
+Namespace:        cattle-system
+Priority:         0
+Service Account:  default
+Node:             node-4/192.168.99.43
+Start Time:       Wed, 22 Jan 2025 18:04:42 -0500
+Labels:           pod-impersonation.cattle.io/token=qqtwgkhhcsdklzxpwthkjbd85v88dbcmzsk5dzlt4wq9vr7blgqd9j
+Annotations:      pod-impersonation.cattle.io/cluster-role: pod-impersonation-helm-op-t27nn
+Status:           Succeeded
+IP:               10.42.6.12
+IPs:
+  IP:  10.42.6.12
+Init Containers:
+  init-kubeconfig-volume:
+    Container ID:  containerd://3ea28d3999ce96b7170d97de041a5c68b9c4cba30c8b4e6908735e5be7b78312
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      cp /home/.kube/config /tmp/.kube && chown 1000 /tmp/.kube/config
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:42 -0500
+      Finished:     Wed, 22 Jan 2025 18:04:42 -0500
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /home/.kube/config from user-kube-configmap (rw,path="config")
+      /tmp/.kube from user-kubeconfig (rw)
+Containers:
+  helm:
+    Container ID:  containerd://9b6c845808ba43f2abcadd78997e04dda3e37ffb4bed806f5a4c714a8b5e93bd
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      helm-cmd
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:43 -0500
+      Finished:     Wed, 22 Jan 2025 18:04:46 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /home/shell/.kube/config
+    Mounts:
+      /home/shell/.kube/config from user-kubeconfig (rw,path="config")
+      /home/shell/helm from data (ro)
+  proxy:
+    Container ID:  containerd://6e8c78c4d0bbff8a2ff201020cab4f2faa0229a4ddbf1ec12e7f90a34b0c90d3
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      kubectl proxy --disable-filter || true
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:04:43 -0500
+      Finished:     Wed, 22 Jan 2025 18:04:47 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /root/.kube/config
+    Mounts:
+      /root/.kube/config from admin-kubeconfig (ro,path="config")
+      /var/run/secrets/kubernetes.io/serviceaccount from pod-impersonation-helm-op-wrssh-token (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   False 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  data:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  helm-operation-7v46r
+    Optional:    false
+  admin-kubeconfig:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-admin-kubeconfig-nrcz6
+    Optional:  false
+  user-kubeconfig:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  user-kube-configmap:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-user-kubeconfig-9n6r5
+    Optional:  false
+  pod-impersonation-helm-op-wrssh-token:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  pod-impersonation-helm-op-wrssh-token
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  kubernetes.io/os=linux
+Tolerations:     cattle.io/os=linux:NoSchedule
+                 node-role.kubernetes.io/controlplane=true:NoSchedule
+                 node-role.kubernetes.io/etcd=true:NoExecute
+                 node-role.kubernetes.io/master=true:NoSchedule
+                 node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                 node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  50m   default-scheduler  Successfully assigned cattle-system/helm-operation-fxxbz to node-4
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container init-kubeconfig-volume
+  Normal  Started    50m   kubelet            Started container init-kubeconfig-volume
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container helm
+  Normal  Started    50m   kubelet            Started container helm
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container proxy
+  Normal  Started    50m   kubelet            Started container proxy
+
+
+Name:             helm-operation-hxhgd
+Namespace:        cattle-system
+Priority:         0
+Service Account:  default
+Node:             node-4/192.168.99.43
+Start Time:       Wed, 22 Jan 2025 18:05:16 -0500
+Labels:           pod-impersonation.cattle.io/token=l8g2q7gn82sqxn7zw75bhtsg9bpsqd84fl5kvdllnwdwltxmcfj45t
+Annotations:      pod-impersonation.cattle.io/cluster-role: pod-impersonation-helm-op-2bfkw
+Status:           Succeeded
+IP:               10.42.6.14
+IPs:
+  IP:  10.42.6.14
+Init Containers:
+  init-kubeconfig-volume:
+    Container ID:  containerd://e98c1dbfabee5bc347f6756efba2b00fcffce8fc80b76455b01cc7ef26fd5da0
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      cp /home/.kube/config /tmp/.kube && chown 1000 /tmp/.kube/config
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:16 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:16 -0500
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /home/.kube/config from user-kube-configmap (rw,path="config")
+      /tmp/.kube from user-kubeconfig (rw)
+Containers:
+  helm:
+    Container ID:  containerd://8cafe80db251d76cb003c7b4e13228efd26c3410e317e10e81212188ded81682
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      helm-cmd
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:17 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:22 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /home/shell/.kube/config
+    Mounts:
+      /home/shell/.kube/config from user-kubeconfig (rw,path="config")
+      /home/shell/helm from data (ro)
+  proxy:
+    Container ID:  containerd://c770ff6993a6c5cf003d91364964337e72af99563052902873d0de36ab4aa90b
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      kubectl proxy --disable-filter || true
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:17 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:23 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /root/.kube/config
+    Mounts:
+      /root/.kube/config from admin-kubeconfig (ro,path="config")
+      /var/run/secrets/kubernetes.io/serviceaccount from pod-impersonation-helm-op-89758-token (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   False 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  data:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  helm-operation-q8hkt
+    Optional:    false
+  admin-kubeconfig:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-admin-kubeconfig-gfwgz
+    Optional:  false
+  user-kubeconfig:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  user-kube-configmap:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-user-kubeconfig-c6qvf
+    Optional:  false
+  pod-impersonation-helm-op-89758-token:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  pod-impersonation-helm-op-89758-token
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  kubernetes.io/os=linux
+Tolerations:     cattle.io/os=linux:NoSchedule
+                 node-role.kubernetes.io/controlplane=true:NoSchedule
+                 node-role.kubernetes.io/etcd=true:NoExecute
+                 node-role.kubernetes.io/master=true:NoSchedule
+                 node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                 node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  50m   default-scheduler  Successfully assigned cattle-system/helm-operation-hxhgd to node-4
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container init-kubeconfig-volume
+  Normal  Started    50m   kubelet            Started container init-kubeconfig-volume
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container helm
+  Normal  Started    50m   kubelet            Started container helm
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container proxy
+  Normal  Started    50m   kubelet            Started container proxy
+
+
+Name:             helm-operation-rbfzm
+Namespace:        cattle-system
+Priority:         0
+Service Account:  default
+Node:             node-4/192.168.99.43
+Start Time:       Wed, 22 Jan 2025 18:05:39 -0500
+Labels:           pod-impersonation.cattle.io/token=xj9cs2bw2zq56ct88cqfgg8tjlvx25tmlvmc2vn4pms9lspmz2764r
+Annotations:      pod-impersonation.cattle.io/cluster-role: pod-impersonation-helm-op-88jh5
+Status:           Succeeded
+IP:               10.42.6.17
+IPs:
+  IP:  10.42.6.17
+Init Containers:
+  init-kubeconfig-volume:
+    Container ID:  containerd://ebc42e1e220937ba5700c39f6a6b4e3c267b9d9209c2ae489c173980f2ffdc45
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      cp /home/.kube/config /tmp/.kube && chown 1000 /tmp/.kube/config
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:39 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:39 -0500
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /home/.kube/config from user-kube-configmap (rw,path="config")
+      /tmp/.kube from user-kubeconfig (rw)
+Containers:
+  helm:
+    Container ID:  containerd://6d1066293a90d841578188da0c61db8515dfd925ae5f416bb9fd2fbd94586087
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      helm-cmd
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:40 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:41 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /home/shell/.kube/config
+    Mounts:
+      /home/shell/.kube/config from user-kubeconfig (rw,path="config")
+      /home/shell/helm from data (ro)
+  proxy:
+    Container ID:  containerd://22ec1f608749c41befacf677406918a8a84b4ba62ce04963b2d2ef63be6d1ab0
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      kubectl proxy --disable-filter || true
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:40 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:42 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /root/.kube/config
+    Mounts:
+      /root/.kube/config from admin-kubeconfig (ro,path="config")
+      /var/run/secrets/kubernetes.io/serviceaccount from pod-impersonation-helm-op-n9h5j-token (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   False 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  data:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  helm-operation-4qsgk
+    Optional:    false
+  admin-kubeconfig:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-admin-kubeconfig-mts9f
+    Optional:  false
+  user-kubeconfig:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  user-kube-configmap:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-user-kubeconfig-bfnwl
+    Optional:  false
+  pod-impersonation-helm-op-n9h5j-token:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  pod-impersonation-helm-op-n9h5j-token
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  kubernetes.io/os=linux
+Tolerations:     cattle.io/os=linux:NoSchedule
+                 node-role.kubernetes.io/controlplane=true:NoSchedule
+                 node-role.kubernetes.io/etcd=true:NoExecute
+                 node-role.kubernetes.io/master=true:NoSchedule
+                 node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                 node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  49m   default-scheduler  Successfully assigned cattle-system/helm-operation-rbfzm to node-4
+  Normal  Pulled     49m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    49m   kubelet            Created container init-kubeconfig-volume
+  Normal  Started    49m   kubelet            Started container init-kubeconfig-volume
+  Normal  Pulled     49m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    49m   kubelet            Created container helm
+  Normal  Started    49m   kubelet            Started container helm
+  Normal  Pulled     49m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    49m   kubelet            Created container proxy
+  Normal  Started    49m   kubelet            Started container proxy
+
+
+Name:             helm-operation-vg9xf
+Namespace:        cattle-system
+Priority:         0
+Service Account:  default
+Node:             node-4/192.168.99.43
+Start Time:       Wed, 22 Jan 2025 18:05:25 -0500
+Labels:           pod-impersonation.cattle.io/token=jf9lrjx6bl24g7vbwhwjbrzmw8zh4zdj5sq56p7nlf96sv64flnqwv
+Annotations:      pod-impersonation.cattle.io/cluster-role: pod-impersonation-helm-op-fjngw
+Status:           Succeeded
+IP:               10.42.6.15
+IPs:
+  IP:  10.42.6.15
+Init Containers:
+  init-kubeconfig-volume:
+    Container ID:  containerd://c711aad4d5483e4cfb480ae6acefb66556191819ad9390fe6b4b20860e4353ba
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      cp /home/.kube/config /tmp/.kube && chown 1000 /tmp/.kube/config
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:25 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:25 -0500
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /home/.kube/config from user-kube-configmap (rw,path="config")
+      /tmp/.kube from user-kubeconfig (rw)
+Containers:
+  helm:
+    Container ID:  containerd://c516edb6bfe9c90608eb98d0b1986d6525c6d4acfc1886c50105c13668621824
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      helm-cmd
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:26 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:36 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /home/shell/.kube/config
+    Mounts:
+      /home/shell/.kube/config from user-kubeconfig (rw,path="config")
+      /home/shell/helm from data (ro)
+  proxy:
+    Container ID:  containerd://61969f30277a4605cccff2e0586f063eb85e0b1fe73c576034efbf3cbb3a2d4e
+    Image:         rancher/shell:v0.3.0
+    Image ID:      docker.io/rancher/shell@sha256:4d7f289b982455e07e96b76bc3f588453e9d353e7160c0aab9f806c3d1e05606
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      kubectl proxy --disable-filter || true
+    State:          Terminated
+      Reason:       Completed
+      Exit Code:    0
+      Started:      Wed, 22 Jan 2025 18:05:26 -0500
+      Finished:     Wed, 22 Jan 2025 18:05:37 -0500
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      KUBECONFIG:  /root/.kube/config
+    Mounts:
+      /root/.kube/config from admin-kubeconfig (ro,path="config")
+      /var/run/secrets/kubernetes.io/serviceaccount from pod-impersonation-helm-op-5vbcw-token (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   False 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  data:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  helm-operation-bnm6r
+    Optional:    false
+  admin-kubeconfig:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-admin-kubeconfig-vvb7c
+    Optional:  false
+  user-kubeconfig:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  user-kube-configmap:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      impersonation-helm-op-user-kubeconfig-pp9cq
+    Optional:  false
+  pod-impersonation-helm-op-5vbcw-token:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  pod-impersonation-helm-op-5vbcw-token
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  kubernetes.io/os=linux
+Tolerations:     cattle.io/os=linux:NoSchedule
+                 node-role.kubernetes.io/controlplane=true:NoSchedule
+                 node-role.kubernetes.io/etcd=true:NoExecute
+                 node-role.kubernetes.io/master=true:NoSchedule
+                 node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                 node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  50m   default-scheduler  Successfully assigned cattle-system/helm-operation-vg9xf to node-4
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container init-kubeconfig-volume
+  Normal  Started    50m   kubelet            Started container init-kubeconfig-volume
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container helm
+  Normal  Started    50m   kubelet            Started container helm
+  Normal  Pulled     50m   kubelet            Container image "rancher/shell:v0.3.0" already present on machine
+  Normal  Created    50m   kubelet            Created container proxy
+  Normal  Started    50m   kubelet            Started container proxy
+
+
+
+START_HERE
+
+
+Name:                 rancher-7548d5dc7c-l2cx9
+Namespace:            cattle-system
+Priority:             1000000000
+Priority Class Name:  rancher-critical
+Service Account:      rancher
+Node:                 node-4/192.168.99.43
+Start Time:           Wed, 22 Jan 2025 18:02:43 -0500
+Labels:               app=rancher
+                      pod-template-hash=7548d5dc7c
+                      release=rancher
+Annotations:          <none>
+Status:               Running
+IP:                   10.42.6.10
+IPs:
+  IP:           10.42.6.10
+Controlled By:  ReplicaSet/rancher-7548d5dc7c
+Containers:
+  rancher:
+    Container ID:  containerd://6dbb6fc60aea6753b02edd8ac30e647ac7438a2e78b517ea693f5c7905f1a495
+    Image:         rancher/rancher:v2.10.1
+    Image ID:      docker.io/rancher/rancher@sha256:a05127d7084ba04a383bd8896b3fcbe2dcf287b1ae26f785c81c99dceff06d9e
+    Port:          80/TCP
+    Host Port:     0/TCP
+    Args:
+      --http-listen-port=80
+      --https-listen-port=443
+      --add-local=true
+    State:          Running
+      Started:      Wed, 22 Jan 2025 18:03:28 -0500
+    Ready:          True
+    Restart Count:  0
+    Liveness:       http-get http://:80/healthz delay=0s timeout=5s period=30s #success=1 #failure=5
+    Readiness:      http-get http://:80/healthz delay=0s timeout=5s period=30s #success=1 #failure=5
+    Startup:        http-get http://:80/healthz delay=0s timeout=5s period=10s #success=1 #failure=12
+    Environment:
+      CATTLE_NAMESPACE:     cattle-system
+      CATTLE_PEER_SERVICE:  rancher
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-zpbt7 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-zpbt7:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 cattle.io/os=linux:NoSchedule
+                             node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  52m                default-scheduler  Successfully assigned cattle-system/rancher-7548d5dc7c-l2cx9 to node-4
+  Normal   Pulling    52m                kubelet            Pulling image "rancher/rancher:v2.10.1"
+  Normal   Pulled     52m                kubelet            Successfully pulled image "rancher/rancher:v2.10.1" in 42.932s (42.932s including waiting). Image size: 952347326 bytes.
+  Normal   Created    52m                kubelet            Created container rancher
+  Normal   Started    52m                kubelet            Started container rancher
+  Warning  Unhealthy  51m (x2 over 51m)  kubelet            Startup probe failed: Get "http://10.42.6.10:80/healthz": dial tcp 10.42.6.10:80: connect: connection refused
+
+
+Name:                 rancher-7548d5dc7c-zbx9l
+Namespace:            cattle-system
+Priority:             1000000000
+Priority Class Name:  rancher-critical
+Service Account:      rancher
+Node:                 node-2/192.168.99.41
+Start Time:           Wed, 22 Jan 2025 18:02:44 -0500
+Labels:               app=rancher
+                      pod-template-hash=7548d5dc7c
+                      release=rancher
+Annotations:          <none>
+Status:               Running
+IP:                   10.42.4.8
+IPs:
+  IP:           10.42.4.8
+Controlled By:  ReplicaSet/rancher-7548d5dc7c
+Containers:
+  rancher:
+    Container ID:  containerd://c9942775fe10abb94d40cef85eeb5691cb8809d36a78704765714f267fef598e
+    Image:         rancher/rancher:v2.10.1
+    Image ID:      docker.io/rancher/rancher@sha256:a05127d7084ba04a383bd8896b3fcbe2dcf287b1ae26f785c81c99dceff06d9e
+    Port:          80/TCP
+    Host Port:     0/TCP
+    Args:
+      --http-listen-port=80
+      --https-listen-port=443
+      --add-local=true
+    State:          Running
+      Started:      Wed, 22 Jan 2025 18:03:47 -0500
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1
+      Started:      Wed, 22 Jan 2025 18:03:28 -0500
+      Finished:     Wed, 22 Jan 2025 18:03:46 -0500
+    Ready:          True
+    Restart Count:  1
+    Liveness:       http-get http://:80/healthz delay=0s timeout=5s period=30s #success=1 #failure=5
+    Readiness:      http-get http://:80/healthz delay=0s timeout=5s period=30s #success=1 #failure=5
+    Startup:        http-get http://:80/healthz delay=0s timeout=5s period=10s #success=1 #failure=12
+    Environment:
+      CATTLE_NAMESPACE:     cattle-system
+      CATTLE_PEER_SERVICE:  rancher
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-pxkt5 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-pxkt5:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 cattle.io/os=linux:NoSchedule
+                             node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  52m                default-scheduler  Successfully assigned cattle-system/rancher-7548d5dc7c-zbx9l to node-2
+  Normal   Pulling    52m                kubelet            Pulling image "rancher/rancher:v2.10.1"
+  Normal   Pulled     52m                kubelet            Successfully pulled image "rancher/rancher:v2.10.1" in 44.062s (44.062s including waiting). Image size: 952347326 bytes.
+  Normal   Created    51m (x2 over 52m)  kubelet            Created container rancher
+  Normal   Started    51m (x2 over 52m)  kubelet            Started container rancher
+  Normal   Pulled     51m                kubelet            Container image "rancher/rancher:v2.10.1" already present on machine
+  Warning  Unhealthy  51m (x3 over 52m)  kubelet            Startup probe failed: Get "http://10.42.4.8:80/healthz": dial tcp 10.42.4.8:80: connect: connection refused
+
+
+Name:                 rancher-7548d5dc7c-zhvjh
+Namespace:            cattle-system
+Priority:             1000000000
+Priority Class Name:  rancher-critical
+Service Account:      rancher
+Node:                 node-3/192.168.99.42
+Start Time:           Wed, 22 Jan 2025 18:02:44 -0500
+Labels:               app=rancher
+                      pod-template-hash=7548d5dc7c
+                      release=rancher
+Annotations:          <none>
+Status:               Running
+IP:                   10.42.5.3
+IPs:
+  IP:           10.42.5.3
+Controlled By:  ReplicaSet/rancher-7548d5dc7c
+Containers:
+  rancher:
+    Container ID:  containerd://424e2c1328d4d86bc8d72dd7e6b5fd61623a1b77d793371ca04e4b9fcee11a80
+    Image:         rancher/rancher:v2.10.1
+    Image ID:      docker.io/rancher/rancher@sha256:a05127d7084ba04a383bd8896b3fcbe2dcf287b1ae26f785c81c99dceff06d9e
+    Port:          80/TCP
+    Host Port:     0/TCP
+    Args:
+      --http-listen-port=80
+      --https-listen-port=443
+      --add-local=true
+    State:          Running
+      Started:      Wed, 22 Jan 2025 18:03:26 -0500
+    Ready:          True
+    Restart Count:  0
+    Liveness:       http-get http://:80/healthz delay=0s timeout=5s period=30s #success=1 #failure=5
+    Readiness:      http-get http://:80/healthz delay=0s timeout=5s period=30s #success=1 #failure=5
+    Startup:        http-get http://:80/healthz delay=0s timeout=5s period=10s #success=1 #failure=12
+    Environment:
+      CATTLE_NAMESPACE:     cattle-system
+      CATTLE_PEER_SERVICE:  rancher
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-95twn (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-95twn:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 cattle.io/os=linux:NoSchedule
+                             node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  52m                default-scheduler  Successfully assigned cattle-system/rancher-7548d5dc7c-zhvjh to node-3
+  Normal   Pulling    52m                kubelet            Pulling image "rancher/rancher:v2.10.1"
+  Normal   Pulled     52m                kubelet            Successfully pulled image "rancher/rancher:v2.10.1" in 42.515s (42.515s including waiting). Image size: 952347326 bytes.
+  Normal   Created    52m                kubelet            Created container rancher
+  Normal   Started    52m                kubelet            Started container rancher
+  Warning  Unhealthy  51m (x2 over 52m)  kubelet            Startup probe failed: Get "http://10.42.5.3:80/healthz": dial tcp 10.42.5.3:80: connect: connection refused
+
+
+Name:                 rancher-webhook-579c7bfbdd-62pww
+Namespace:            cattle-system
+Priority:             1000000000
+Priority Class Name:  rancher-critical
+Service Account:      rancher-webhook
+Node:                 node-2/192.168.99.41
+Start Time:           Wed, 22 Jan 2025 18:04:51 -0500
+Labels:               app=rancher-webhook
+                      pod-template-hash=579c7bfbdd
+Annotations:          <none>
+Status:               Running
+IP:                   10.42.4.10
+IPs:
+  IP:           10.42.4.10
+Controlled By:  ReplicaSet/rancher-webhook-579c7bfbdd
+Containers:
+  rancher-webhook:
+    Container ID:   containerd://49b1dfe01c29ba9ad31c557d1063eb90d2749720a224ae6b58dfebe5d6b740cd
+    Image:          rancher/rancher-webhook:v0.6.2
+    Image ID:       docker.io/rancher/rancher-webhook@sha256:9fb952d30aa6749978b579ca9e7b7862e9f3ad88013ad7624dadbacf95578202
+    Port:           9443/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Wed, 22 Jan 2025 18:04:54 -0500
+    Ready:          True
+    Restart Count:  0
+    Liveness:       http-get https://:https/healthz delay=0s timeout=1s period=5s #success=1 #failure=3
+    Startup:        http-get https://:https/healthz delay=0s timeout=1s period=5s #success=1 #failure=60
+    Environment:
+      STAMP:        
+      ENABLE_MCM:   true
+      CATTLE_PORT:  9443
+      NAMESPACE:    cattle-system (v1:metadata.namespace)
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-fwvz8 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-fwvz8:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              kubernetes.io/os=linux
+Tolerations:                 cattle.io/os=linux:NoSchedule
+                             node-role.kubernetes.io/master=true:NoSchedule
+                             node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  50m                default-scheduler  Successfully assigned cattle-system/rancher-webhook-579c7bfbdd-62pww to node-2
+  Normal   Pulling    50m                kubelet            Pulling image "rancher/rancher-webhook:v0.6.2"
+  Normal   Pulled     50m                kubelet            Successfully pulled image "rancher/rancher-webhook:v0.6.2" in 1.779s (1.779s including waiting). Image size: 29705805 bytes.
+  Normal   Created    50m                kubelet            Created container rancher-webhook
+  Normal   Started    50m                kubelet            Started container rancher-webhook
+  Warning  Unhealthy  50m (x3 over 50m)  kubelet            Startup probe failed: HTTP probe failed with statuscode: 500
+
+
+Name:             system-upgrade-controller-584895cdb9-4xgqs
+Namespace:        cattle-system
+Priority:         0
+Service Account:  system-upgrade-controller
+Node:             master-2/192.168.99.51
+Start Time:       Wed, 22 Jan 2025 18:05:18 -0500
+Labels:           pod-template-hash=584895cdb9
+                  upgrade.cattle.io/controller=system-upgrade-controller
+Annotations:      <none>
+Status:           Running
+IP:               10.42.1.2
+IPs:
+  IP:           10.42.1.2
+Controlled By:  ReplicaSet/system-upgrade-controller-584895cdb9
+Containers:
+  system-upgrade-controller:
+    Container ID:    containerd://1b71dd1abebe9c81bda1fd40e83ad90c6c710b3944370c9e0a9bd72496f76ca0
+    Image:           rancher/system-upgrade-controller:v0.14.2
+    Image ID:        docker.io/rancher/system-upgrade-controller@sha256:3cdbfdd90f814702cefb832fc4bdb09ea93865a4d06c6bafd019d1dc6a9f34c9
+    Port:            <none>
+    Host Port:       <none>
+    SeccompProfile:  RuntimeDefault
+    State:           Running
+      Started:       Wed, 22 Jan 2025 18:05:20 -0500
+    Ready:           True
+    Restart Count:   0
+    Environment Variables from:
+      system-upgrade-controller-config  ConfigMap  Optional: false
+    Environment:
+      SYSTEM_UPGRADE_CONTROLLER_NAME:        (v1:metadata.labels['upgrade.cattle.io/controller'])
+      SYSTEM_UPGRADE_CONTROLLER_NAMESPACE:  cattle-system (v1:metadata.namespace)
+    Mounts:
+      /etc/ca-certificates from etc-ca-certificates (ro)
+      /etc/pki from etc-pki (ro)
+      /etc/ssl from etc-ssl (ro)
+      /tmp from tmp (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-4l8qs (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  etc-ssl:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/ssl
+    HostPathType:  DirectoryOrCreate
+  etc-pki:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/pki
+    HostPathType:  DirectoryOrCreate
+  etc-ca-certificates:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/ca-certificates
+    HostPathType:  DirectoryOrCreate
+  tmp:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:     
+    SizeLimit:  <unset>
+  kube-api-access-4l8qs:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 op=Exists
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  50m   default-scheduler  Successfully assigned cattle-system/system-upgrade-controller-584895cdb9-4xgqs to master-2
+  Normal  Pulling    50m   kubelet            Pulling image "rancher/system-upgrade-controller:v0.14.2"
+  Normal  Pulled     50m   kubelet            Successfully pulled image "rancher/system-upgrade-controller:v0.14.2" in 1.616s (1.616s including waiting). Image size: 12672674 bytes.
+  Normal  Created    50m   kubelet            Created container system-upgrade-controller
+  Normal  Started    50m   kubelet            Started container system-upgrade-controller

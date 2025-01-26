@@ -1,0 +1,25 @@
+Name:             rancher
+Labels:           app=rancher
+                  app.kubernetes.io/managed-by=Helm
+                  chart=rancher-2.10.1
+                  heritage=Helm
+                  release=rancher
+Namespace:        cattle-system
+Address:          
+Ingress Class:    <none>
+Default backend:  <default>
+TLS:
+  tls-rancher-ingress terminates rancher.example.com
+Rules:
+  Host                 Path  Backends
+  ----                 ----  --------
+  rancher.example.com  
+                       /   rancher:80 (10.42.5.3:80,10.42.6.10:80,10.42.4.8:80)
+Annotations:           cert-manager.io/issuer: rancher
+                       cert-manager.io/issuer-kind: Issuer
+                       meta.helm.sh/release-name: rancher
+                       meta.helm.sh/release-namespace: cattle-system
+                       nginx.ingress.kubernetes.io/proxy-connect-timeout: 30
+                       nginx.ingress.kubernetes.io/proxy-read-timeout: 1800
+                       nginx.ingress.kubernetes.io/proxy-send-timeout: 1800
+Events:                <none>

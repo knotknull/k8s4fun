@@ -1,0 +1,9 @@
+
+
+I ran the k3s-ansible repo against my proxmox successfully after multiple stops / starts.
+
+I wanted to add rancher.  I realized there was another repo/script that installed rke2 
+via script and that did install rancher.  (i.e. rke2.sh) 
+
+I pulled the rancher install steps out of rke2.sh and created a script called (remarkably): 
+install_rancher.sh

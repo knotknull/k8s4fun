@@ -1,0 +1,12 @@
+NAME                                         READY   STATUS      RESTARTS      AGE
+helm-operation-62xrk                         0/2     Completed   0             56m
+helm-operation-f2pn9                         0/2     Completed   0             55m
+helm-operation-fxxbz                         0/2     Completed   0             56m
+helm-operation-hxhgd                         0/2     Completed   0             55m
+helm-operation-rbfzm                         0/2     Completed   0             55m
+helm-operation-vg9xf                         0/2     Completed   0             55m
+rancher-7548d5dc7c-l2cx9                     1/1     Running     0             58m
+rancher-7548d5dc7c-zbx9l                     1/1     Running     1 (56m ago)   58m
+rancher-7548d5dc7c-zhvjh                     1/1     Running     0             58m
+rancher-webhook-579c7bfbdd-62pww             1/1     Running     0             55m
+system-upgrade-controller-584895cdb9-4xgqs   1/1     Running     0             55m
