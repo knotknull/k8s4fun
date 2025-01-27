@@ -20,7 +20,10 @@ Kubernetes features:
  - Disaster Recovery - backup and restore 
 
 
-Kubernetes Components:
+
+######################################################################################
+## Kubernetes Components
+######################################################################################
 
 Node:  Server, physical or virtual machine
 
@@ -59,7 +62,67 @@ NOTE: Pod usually just runs one application inside of it but can run multiple ap
         +---------------------------------+
 
 Service:  Permanent (static) IP Address that can be attached to a pod
-    ex. application can communicate with DB without updating if DB pod is restarted
+        - Life cycle of Pod and Service are NOT connecited
+
+    ex. application can communicate with DB without updating 
+        connection if DB pod is restarted
+
+External Service:  Available via web browser, etc
+        Utilize Ingress to  map 
+        http://124.89.101.2:8080 to https://myapp.com
+
+        Utilize Ingres, routes traffic into cluster
+
+Internal Service:  No external access, service only for other k8s services / objects
+
+        +-Node----------------------------+
+        |                                 |
+        |    [Secret] [ConfigMap]         |
+        |       |          |              |
+        |       +----+-----+    [Ingres]--<------- 
+        |            |              |     |
+        |    +Pod-------------+     |     |
+        |    |                |     |     |
+        |    |  Application   |     |     |
+        |    |                |-[Service] |
+        |    |[--abstraction-]|     |     |
+        |    |  [ container ] |     |     |
+        |    +----------------+     |     |
+        |                           |     |
+        |    +Pod-------------+     |     |
+        |    |                |     |     |
+        |    |    Database    |     |     |
+        |    |                |-[Service] |
+        |    |[--abstraction-]|           |
+        |    |  [ container ] |           |
+        |    +----------------+           |
+        |                                 |
+        +---------------------------------+
+
+
+# ConfigMap / Secret
+
+ConfigMap: external configuration of your application, connect to pod
+           contains configuration information needed by app i.e. db connect string
+            DB_URL=mongodb
+
+Secret: like configmap but used to store secret data i.e. credentials / certificates
+        connect to pod
+        - base64 encoded i.e. username / password
+            DB_USER=username
+            DB_PWD =password
+
+        - Use as ENV vars or properties file
+
+    NOTE: built-in security mechanism is not enabled by default
+
+
+# Volumes
+
+Volumes:  Persist data (logs, db, etc) beyond the life of a pod.
+          Attaches physical hard drive storage to a pod
+            - local machine (node storage where pod is located)
+            - remote storage (outside of k8s cluster)
 
         +-Node----------------------------+
         |                                 |
@@ -78,7 +141,72 @@ Service:  Permanent (static) IP Address that can be attached to a pod
         |    |[--abstraction-]|           |
         |    |  [ container ] |           |
         |    +----------------+           |
+        |         [Volume]----------------+--------[remote ]
+        |            |                    |        [storage]
+        |            +----[ local ]       |
+        |                 [storage]       |
         |                                 |
         +---------------------------------+
+
+NOTE: K8s Does Not Manage Data Persistence
+
+
+# Deployment / StatefulSet
+
+Deployment:  blueprint of a pod, specify how many replicas
+        - Deployment is an abstraction on pods
+            Interaction done with Deployments and not Pods directly
+        - Can scale up / down number of replicas needed
+        - Replica is connected to same Service
+        - Service has 2 functions:
+            - permanent IP
+            - load balancer 
+
+
+
+        +------------------------+        +------------------------+
+        |              [[--------Deployment--------]]              |
+        |               |        |        |        |               |
+        |    +Pod-------------+  |        |  +Pod-------------+    |
+        |    |                |  |        |  |                |    |
+        |    |  Application   |  |        |  |  Application   |    |
+        |    |                |---[Service]--|                |    |
+        |    +----------------+  |        |  +----------------+    |
+        |                        |        |                        |
+        |    +Pod-------------+  |        |  +Pod-------------+    |
+        |    |                |  |        |  |                |    |
+        |    |    Database    |  |        |  |    Database    |    |
+        |    |                |--[Service]---|                |    |
+        |    +----------------+  |        |  +----------------+    |
+        |               |        |        |        |               |
+        |              [[------StatefulSet---------]]              |
+        |                        |        |                        |
+        +--Node-1----------------+        +--Node-2----------------+
+
+
+
+NOTE: Databases can't be replicated via Deployment because
+      Database has State.  Need to avoid data inconsistencies
+      hence StatefulSet
+
+StatefulSet:  Used for Stateful applications i.e. databases
+
+    Deployments  -->>  Apps 
+    StatefulSets -->>  Databases 
+
+
+StatefulSet responsible for scaling up / down pods but importatntly
+makes sure the db reads / writes are synchronized 
+
+NOTE: Deploying StatefulSets can be difficult 
+      Databases are often hosed outside of K8s cluster
+
+
+######################################################################################
+## Kubernetes Architecture
+######################################################################################
+
+
+[Stopped at 22:40] LAST HERE
 
 .
