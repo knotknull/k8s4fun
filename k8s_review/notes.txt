@@ -1,0 +1,84 @@
+Kubernetes
+From:  https://youtu.be/X48VuDVv0do
+
+
+
+
+
+Kubernetes:  Open source container orchestration tool
+  - developed by google
+  - manage containerized applications in different deployment environments
+    - physical
+    - cloud
+    - virtual
+
+containers + microservices >> need to manage hundreds of containers
+
+Kubernetes features:
+ - High Availability - no downtime 
+ - Scalability - high performance 
+ - Disaster Recovery - backup and restore 
+
+
+Kubernetes Components:
+
+Node:  Server, physical or virtual machine
+
+Pod:   Smallest unit of K8s
+        - An abstraction over a container
+        - pod creates a layer over container (running environment)
+        - Kubernetes wants to "abstract away" container runtime
+            - ability to replace container tech
+        - ONLY interact with Kubernetes Layer (not docker)
+
+NOTE: Pod usually just runs one application inside of it but can run multiple apps in one pod.
+
+    Each Pod gets its own IP address (internal)
+        - each pod can communicate with each other utilizing Pod IP Address
+
+    NOTE: pods are ephenemeral and can be killed an spun up.  A new pod will get a new IP address.
+
+        +-Node----------------------------+
+        |                                 |
+        |        +Pod-------------+       |
+        |        |                |       |
+        |        |  Application   |       |
+        |        |                |-[IP]  |
+        |        |[--abstraction-]|  |    |
+        |        |  [ container ] |  |    |
+        |        +----------------+  |    |
+        |                            |    |
+        |        +Pod-------------+  |    |
+        |        |                |  |    |
+        |        |    Database    |  |    |
+        |        |                |-[IP]  |
+        |        |[--abstraction-]|       |
+        |        |  [ container ] |       |
+        |        +----------------+       |
+        |                                 |
+        +---------------------------------+
+
+Service:  Permanent (static) IP Address that can be attached to a pod
+    ex. application can communicate with DB without updating if DB pod is restarted
+
+        +-Node----------------------------+
+        |                                 |
+        |    +Pod-------------+           |
+        |    |                |           |
+        |    |  Application   |           |
+        |    |                |-[Service] |
+        |    |[--abstraction-]|     |     |
+        |    |  [ container ] |     |     |
+        |    +----------------+     |     |
+        |                           |     |
+        |    +Pod-------------+     |     |
+        |    |                |     |     |
+        |    |    Database    |     |     |
+        |    |                |-[Service] |
+        |    |[--abstraction-]|           |
+        |    |  [ container ] |           |
+        |    +----------------+           |
+        |                                 |
+        +---------------------------------+
+
+.
