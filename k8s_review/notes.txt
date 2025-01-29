@@ -207,6 +207,255 @@ NOTE: Deploying StatefulSets can be difficult
 ######################################################################################
 
 
-[Stopped at 22:40] LAST HERE
+
+Two types of nodes:  Master / Workder (Node)
+  - Each Node has multiple pods on it 
+  - 3 Processes MUST BE INSTALLED ON EVERY Node to:
+    - manage and schedule pods
+
+Nodes to the "work" i.e. Worker Nodes
+
+Processes needed: 
+1. Container Runtime
+    - independent of Kubernetes
+
+2. Kubelet: 
+    - Kubernetes process
+    - process that schedules Pods/containers
+    - interacts with both container and node
+    - Kubelet starts the pod with a container inside
+        - assigns resources from node to container
+            - i.e. CPU / RAM / Storage
+
+3. Kube proxy: 
+    - Kubernetes process
+    - forwards requests from service to a specific pod
+        - intelligent forwarding logic
+        - communication performant and low overhead
+            i.e. App requesting DB Service will get routed to same node 
+                if both App and DB are running on same node
+                    - no network overhead
+
+        +-Node-----------------------------+
+        |                                  |
+        |    +Pod-------------+            |
+        |    |                |            |
+        |    |     App        |------+     |
+        |    |                |      |     |
+        |    +----------------+  [ Kube ]<-+------>>
+        |                        [Proxy ]  |
+        |    +Pod-------------+      |     |
+        |    |                |      |     |
+        |    |    Database    |------+     |
+        |    |                |      |     |
+        |    +----------------+      |     |
+        |                            |     |
+        |                            |     |
+        |                       [Kubelet]  |
+        |                           |      |
+        |[container runtime]--------+      |
+        |  ( Docker )                      |
+        +----------------------------------+
+
+Master Nodes: 
+  - schedules pod
+  - reschedule / restarts pod
+  - joins new Node
+  - 4 Processes MUST BE INSTALLED ON EVERY Master Node
+
+1. API Server 
+  - Client interacts with API server to deploy new app, etc
+        - kubelet, UI, API
+  - Cluster Gateway 
+    - Updates, Queries
+  - Gatekeeper for Authentication
+
+2. Scheduler
+  - Request for a new Pod: API Server -->> Scheduler
+    - starts app on worker node
+    - determines where (which node) pod should be schedule
+    - initiates scheduling thru kubelet
+
+3. Controller Manager
+  - Detects state changes of cluster (i.e. crashed pods)
+    - reschedules dead pods i.e. restore state
+        - Controller Manager -> Scheduler -> Kubelet
+
+4. etcd
+  - key value store of Cluster State
+    - "cluster brain"
+    - All cluster changes stored in key value store
+        - killed / restarted pod
+        
+
+NOTE: Application data NOT stored in etcd        
+                                                                          [Client]
+                                                                             |
+                                                                      Update | Query
+        +-Node-----------------------------+               +-Master--------------------------------+           
+        |                                  |               |    [-----   API Server   -----]       |  <-- Cluster Gateway
+        |    +Pod-------------+            |               |                                       |            + 
+        |    |                |            |               |                                       |       Auth / Auth
+        |    |     App        |------+     |          +----+----[-----   Scheduler   ------] <-+   | 
+        |    |                |      |     |          |    |                ^                  |   |
+        |    +----------------+  [ Kube ]<-+---->>    |    |        restart | crashed pod      |   |
+        |                        [Proxy ]  |          |    |                |                  |   |
+        |    +Pod-------------+      |     |          |    |    [--- Controller Manager ---] <-+   |
+        |    |                |      |     |          |    |                                   |   |
+        |    |    Database    |------+     |          |    |                                   |   |
+        |    |                |      |     |          |    |                                   |   |
+        |    +----------------+      |     |          |    |    [---------- etcd ----------] <-+   |  <-- Cluster "Brain"
+        |                            |     |          |    |    [ key / value, key / value ]       |   holds state of cluster for
+        |                            |     | request  |    |                                       |  Controller Manager and Scheduler
+        |                       [Kubelet]<-+----------+    |                                       |
+        |                           |      | new pod       |                                       |
+        |[container runtime]--------+      |               |                                       |
+        |  ( Docker )                      |               |                                       |
+        +----------------------------------+               +---------------------------------------+           
+
+
+Masters are usually in a cluster
+ - API Server is load balanced
+ - etcd is distributed storage across all master nodes 
+
+        +-Master-1--------+    +-Master-2--------+    +-Master-3--------+
+        |                 |    |                 |    |                 |
+   +----+-----------------+----+-----------------+----+-----------------+----+
+   |    |                 |    |                 |    |                 |    |
+   |    | [ API Server ]  |    | [ API Server ]  |    | [ API Server ]  |    | <-- Load Balanced across Masters
+   |    |                 |    |                 |    |                 |    |
+   +----+-----------------+----+-----------------+----+-----------------+----+
+        |                 |    |                 |    |                 |
+        | [ Scheduler  ]  |    | [ Scheduler  ]  |    | [ Scheduler  ]  |
+        |                 |    |                 |    |                 |
+        | [Controller Mgr]|    | [Controller Mgr]|    | [Controller Mgr]|
+        |                 |    |                 |    |                 |
+   +----+-----------------+----+-----------------+----+-----------------+----+
+   |    |                 |    |                 |    |                 |    |
+   |    | [    etcd    ]  |    | [    etcd    ]  |    | [    etcd    ]  |    | <-- Distributed Storage across Masters
+   |    |                 |    |                 |    |                 |    |
+   +----+-----------------+----+-----------------+----+-----------------+----+
+        |                 |    |                 |    |                 |
+        +-----------------+    +-----------------+    +-----------------+
+
+
+Master Nodes need less resources:
+    - CPU / RAM / Storage
+    - they are only running master processes
+
+Worker Nodes need MORE resources:
+    - CPU / RAM / Storage
+    - they are running the applications and interfacing with pods
+
+
+Increasing cluster with new Master / Nodes:
+    - get new bare server
+    - install master / worker node processes
+    - add to cluster
+
+
+
+
+######################################################################################
+## minikube and kubectl - local setup
+######################################################################################
+
+minikube: one node cluster 
+  - master process and worker process on one machine 
+  - docker pre-installed
+  - run via virtual box
+  - 1 node k8s cluster that runs in VirutalBox
+        - testing, etc.
+
+        Minikube
+ +--------------------------+
+ |  +--------------------+  |
+ |  | [Master Processes] |  |
+ |  |                    |  |
+ |  | [Worker Processes] |  |
+ |  |                    |  |
+ |  |                    |  |
+ |  | [    Docker     ]  |  |
+ |  +--------Node--------+  |
+ |                          |
+ +-VirtualBox---------------+
+
+
+NOTE: check this out for minikube on lxc:
+      https://github.com/d3adwolf/kubernetes-inside-proxmox-lxc
+
+kubectl
+ - interact with k8s cluster via API Server
+    - UI, API, CLI
+ - kubectl is CLI client 
+ - kubectl can interface with minikube and k8s clusters
+
+
+    [ minikube ]   [ k8s cluster ]
+        +-----------------+
+                | 
+             kubectl
+
+
+Install doc:
+https://kubernetes/io/docs/tasks/tools/install-minikube
+https://kubernetes/io/docs/tasks/tools/install-kubectl
+
+
+Install minikube on a lxc container on proxmox:
+https://github.com/d3adwolf/kubernetes-inside-proxmox-lxc
+
+
+NOTE: minikube is installed on an Ubuntu 24 image on proxmox as minikube at 192.168.99.33 w/ ansible id installed
+ssh ansible@minikube
+Latest minikube and kubectl installed as well as docker
+
+kubectl get nodes
+NAME       STATUS   ROLES           AGE     VERSION
+minikube   Ready    control-plane   2m50s   v1.32.0
+
+minikube status
+minikube
+type: Control Plane
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
+
+kubectl version
+Client Version: v1.32.1
+Kustomize Version: v5.5.0
+Server Version: v1.32.0
+
+######################################################################################
+## kubectl commands
+######################################################################################
+
+[ LAST HERE 45:01 ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Hashicorp Vault
+https://www.youtube.com/watch?v=klyAhaklGNU
+
 
 .
