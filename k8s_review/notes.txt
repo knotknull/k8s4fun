@@ -431,31 +431,487 @@ Server Version: v1.32.0
 ## kubectl commands
 ######################################################################################
 
-[ LAST HERE 45:01 ]
+# get status of nodes
+kubectl get nodes
+NAME       STATUS   ROLES           AGE   VERSION
+minikube   Ready    control-plane   47h   v1.32.0
+
+
+# get pods (none deploye, hence no resources)
+kubectl get pods
+No resources found in default namespace.
+
+# get services 
+kubectl get services
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   47h
+
+
+Now let's create a pod 
+
+kubectl create -h
+
+Create a resource from a file or from stdin.
+
+ JSON and YAML formats are accepted.
+
+Examples:
+  # Create a pod using the data in pod.json
+  kubectl create -f ./pod.json
+  
+  # Create a pod based on the JSON passed into stdin
+  cat pod.json | kubectl create -f -
+  
+  # Edit the data in registry.yaml in JSON then create the resource using the edited data
+  kubectl create -f registry.yaml --edit -o json
+
+
+######################################################################################
+## Create a Deployment (and indirectly a Replicaset and Pod)
+######################################################################################
+
+Can't create pod directly, Pod is the smallest unit within the cluster.
+Deployment is an abstraction layer over Pods
+
+  kubectl create deployment NAME --image=image -- [COMMAND] [args...] [options]
+
+keys are NAME and image.  Pod is created from an image
+
+i.e. 
+kubectl create deployment nginx-dep --image=nginx   ## This deploys and nginx docker image
+> deployment.apps/nginx-dep created
+
+kctl get deployment                                 ## now let's get the deployments, FYI I made an alias kctl=kubectl
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-dep   1/1     1            1           70s
+
+
+We successfully executed the deployment, let's check on the underlying pod
+
+kctl get pod                                        ## get the pod, under the deployment
+NAME                      READY   STATUS    RESTARTS   AGE
+nginx-dep-5879cc9-gszq9   1/1     Running   0          2m26s
+
+
+A deployment is the blueprint for creating a pod
+Most basic config for deployment: 
+    - name and image to use   (rest are defaults)
+
+
+Between a deployment and a pod there is another layer that is automatically managed by deployment:  ReplicaSet
+
+kctl get replicaset                                 ## get the ReplicaSet, notice the name is a subset of the pod or vice versa
+NAME                DESIRED   CURRENT   READY   AGE
+nginx-dep-5879cc9   1         1         1       6m19s
+
+
+Replicaset manages the replicas of a Pod
+NOTE: you do not interact directly with replicasets, only deal with deployments
+
+In the deployment you can configure howmany replicas of pod to deploy
+
+
+Abstraction Layer 
+
+
+        [ Deployment manages .. ]
+      [ ReplicaSet  manages   .. ]          + -- k8s manages from here down -- +
+     [ Pod is an abstraction of .. ]        |                                  | 
+   [ container ]         [ container ]      v                                  v
+
+
+Everything below deployment is handeled by k8s
+
+######################################################################################
+## Edit / Change a Deployment (and indirectly a Replicaset and Pod)
+######################################################################################
+
+Now let's edit the deployment 
+kubectl edit deployment nginx-dep           # provides and configuration file that represents the deployment
+
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  creationTimestamp: "2025-01-31T02:23:10Z"
+  generation: 1
+  labels:
+    app: nginx-dep
+  name: nginx-dep
+  namespace: default
+  resourceVersion: "9640"
+  uid: f383eaf6-a15a-4b5a-9f7b-4a41e49fedc3
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: nginx-dep
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx-dep
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2025-01-31T02:23:15Z"
+    lastUpdateTime: "2025-01-31T02:23:15Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2025-01-31T02:23:10Z"
+    lastUpdateTime: "2025-01-31T02:23:15Z"
+    message: ReplicaSet "nginx-dep-5879cc9" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1
+                         
+
+NOTE:   change image to nginx:1.16 and save deployment file
+        - image: nginx:1.16
+Note below that the pod and replicaset have been updated
+
+kctl edit deployment nginx-dep
+deployment.apps/nginx-dep edited
+
+kctl get deployment
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-dep   1/1     1            1           20m
+
+kctl get pods
+NAME                         READY   STATUS    RESTARTS   AGE
+nginx-dep-579d65b68f-7zn5w   1/1     Running   0          21s
+
+
+kctl get replicaset                     ## Hey the replicaset count of the prior version is now 0 !!
+NAME                   DESIRED   CURRENT   READY   AGE
+nginx-dep-579d65b68f   1         1         1       35s
+nginx-dep-5879cc9      0         0         0       20m
+
+HENCE, by make one change to the deployment, via the generated deployment file, the replicaset and pods are updated 
+
+######################################################################################
+## Pod Debugging
+######################################################################################
+
+kubectl logs [pod name]
+
+# first let's create a deployment that will generate some logs
+kctl create deployment mong-deply --image=mongo
+deployment.apps/mong-deply created
+
+
+
+kctl get deployment
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+mong-deply   0/1     1            0           38s
+nginx-dep    1/1     1            1           31m
+
+kctl get replicaset
+NAME                    DESIRED   CURRENT   READY   AGE
+mong-deply-659b9dd647   1         1         0       47s
+nginx-dep-579d65b68f    1         1         1       11m
+nginx-dep-5879cc9       0         0         0       31m
+
+kctl get pods
+NAME                          READY   STATUS             RESTARTS      AGE
+mong-deply-659b9dd647-9wqtv   0/1     CrashLoopBackOff   2 (25s ago)   52s
+nginx-dep-579d65b68f-7zn5w    1/1     Running            0             11m
+
+
+
+######################################################################################
+## Get Logs from Pods  (sorta rhymes)
+######################################################################################
+
+kctl logs mong-deply-659b9dd647-9wqtv
+ansible@minikube:~$ kctl logs mong-deply-659b9dd647-9wqtv
+{"t":{"$date":"2025-01-31T03:08:19.785+00:00"},"s":"I",  "c":"CONTROL",  "id":23285,   "ctx":"main","msg":"Automatically disabling TLS 1.0, to force-enable TLS 1.0 specify --sslDisabledProtocols 'none'"}
+{"t":{"$date":"2025-01-31T03:08:19.786+00:00"},"s":"I",  "c":"CONTROL",  "id":5945603, "ctx":"main","msg":"Multi threading initialized"}
+{"t":{"$date":"2025-01-31T03:08:19.789+00:00"},"s":"I",  "c":"NETWORK",  "id":4648601, "ctx":"main","msg":"Implicit TCP FastOpen unavailable. If TCP FastOpen is required, set at least one of the related parameters","attr":{"relatedParameters":["tcpFastOpenServer","tcpFastOpenClient","tcpFastOpenQueueSize"]}}
+{"t":{"$date":"2025-01-31T03:08:19.790+00:00"},"s":"I",  "c":"NETWORK",  "id":4915701, "ctx":"main","msg":"Initialized wire specification","attr":{"spec":{"incomingExternalClient":{"minWireVersion":0,"maxWireVersion":25},"incomingInternalClient":{"minWireVersion":0,"maxWireVersion":25},"outgoing":{"minWireVersion":6,"maxWireVersion":25},"isInternalClient":true}}}
+{"t":{"$date":"2025-01-31T03:08:19.791+00:00"},"s":"I",  "c":"TENANT_M", "id":7091600, "ctx":"main","msg":"Starting TenantMigrationAccessBlockerRegistry"}
+{"t":{"$date":"2025-01-31T03:08:19.791+00:00"},"s":"I",  "c":"CONTROL",  "id":4615611, "ctx":"initandlisten","msg":"MongoDB starting","attr":{"pid":1,"port":27017,"dbPath":"/data/db","architecture":"64-bit","host":"mong-deply-659b9dd647-9wqtv"}}
+{"t":{"$date":"2025-01-31T03:08:19.791+00:00"},"s":"I",  "c":"CONTROL",  "id":23403,   "ctx":"initandlisten","msg":"Build Info","attr":{"buildInfo":{"version":"8.0.4","gitVersion":"bc35ab4305d9920d9d0491c1c9ef9b72383d31f9","openSSLVersion":"OpenSSL 3.0.13 30 Jan 2024","modules":[],"allocator":"tcmalloc-google","environment":{"distmod":"ubuntu2404","distarch":"x86_64","target_arch":"x86_64"}}}}
+{"t":{"$date":"2025-01-31T03:08:19.791+00:00"},"s":"I",  "c":"CONTROL",  "id":51765,   "ctx":"initandlisten","msg":"Operating System","attr":{"os":{"name":"Ubuntu","version":"24.04"}}}
+{"t":{"$date":"2025-01-31T03:08:19.791+00:00"},"s":"I",  "c":"CONTROL",  "id":21951,   "ctx":"initandlisten","msg":"Options set by command line","attr":{"options":{"net":{"bindIp":"*"}}}}
+{"t":{"$date":"2025-01-31T03:08:19.792+00:00"},"s":"I",  "c":"STORAGE",  "id":22297,   "ctx":"initandlisten","msg":"Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem","tags":["startupWarnings"]}
+{"t":{"$date":"2025-01-31T03:08:19.792+00:00"},"s":"I",  "c":"STORAGE",  "id":22315,   "ctx":"initandlisten","msg":"Opening WiredTiger","attr":{"config":"create,cache_size=1446M,session_max=33000,eviction=(threads_min=4,threads_max=4),config_base=false,statistics=(fast),log=(enabled=true,remove=true,path=journal,compressor=snappy),builtin_extension_config=(zstd=(compression_level=6)),file_manager=(close_idle_time=600,close_scan_interval=10,close_handle_minimum=2000),statistics_log=(wait=0),json_output=(error,message),verbose=[recovery_progress:1,checkpoint_progress:1,compact_progress:1,backup:0,checkpoint:0,compact:0,evict:0,history_store:0,recovery:0,rts:0,salvage:0,tiered:0,timestamp:0,transaction:0,verify:0,log:0],prefetch=(available=true,default=false),"}}
 
 
 
 
 
+######################################################################################
+## Now Describe That Pod
+######################################################################################
+
+# now describe the pod          NOTE: This shows alot of detail about pod
+kctl describe pod [pod name]
+
+kctl describe pod mong-deply-659b9dd647-9wqtv
+Name:             mong-deply-659b9dd647-9wqtv
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Fri, 31 Jan 2025 02:53:39 +0000
+Labels:           app=mong-deply
+                  pod-template-hash=659b9dd647
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.18
+IPs:
+  IP:           10.244.0.18
+Controlled By:  ReplicaSet/mong-deply-659b9dd647
+Containers:
+  mongo:
+    Container ID:   docker://10e76f62f509c6863346a4c1bcaf88dce36f1b0534a1bcf01bf826081978e972
+    Image:          mongo
+    Image ID:       docker-pullable://mongo@sha256:c7ac28ef4d8137358ed86014a9d10dda2730a64046ce2a49610ad4bd9788d4cb
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Fri, 31 Jan 2025 03:08:19 +0000
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    132
+      Started:      Fri, 31 Jan 2025 03:04:39 +0000
+      Finished:     Fri, 31 Jan 2025 03:04:39 +0000
+    Ready:          True
+    Restart Count:  8
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-plvsh (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-plvsh:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason          Age                   From               Message
+  ----     ------          ----                  ----               -------
+  Normal   Scheduled       16m                   default-scheduler  Successfully assigned default/mong-deply-659b9dd647-9wqtv to minikube
+  Normal   Pulled          16m                   kubelet            Successfully pulled image "mongo" in 9.172s (9.172s including waiting). Image size: 854891519 bytes.
+  Normal   Pulled          16m                   kubelet            Successfully pulled image "mongo" in 379ms (379ms including waiting). Image size: 854891519 bytes.
+  Normal   Pulled          16m                   kubelet            Successfully pulled image "mongo" in 341ms (341ms including waiting). Image size: 854891519 bytes.
+  Normal   Pulled          15m                   kubelet            Successfully pulled image "mongo" in 374ms (374ms including waiting). Image size: 854891519 bytes.
+  Normal   Pulled          15m                   kubelet            Successfully pulled image "mongo" in 426ms (426ms including waiting). Image size: 854891519 bytes.
+  Normal   Started         13m (x6 over 16m)     kubelet            Started container mongo
+  Normal   Created         13m (x6 over 16m)     kubelet            Created container: mongo
+  Normal   Pulled          13m                   kubelet            Successfully pulled image "mongo" in 422ms (422ms including waiting). Image size: 854891519 bytes.
+  Normal   Pulled          11m                   kubelet            Successfully pulled image "mongo" in 434ms (434ms including waiting). Image size: 854891519 bytes.
+  Warning  BackOff         6m30s (x47 over 16m)  kubelet            Back-off restarting failed container mongo in pod mong-deply-659b9dd647-9wqtv_default(51d99b21-a899-4363-b906-979c7a309d1a)
+  Normal   Pulling         5m52s (x8 over 16m)   kubelet            Pulling image "mongo"
+  Normal   SandboxChanged  2m12s                 kubelet            Pod sandbox changed, it will be killed and re-created.
+  Normal   Pulling         2m11s                 kubelet            Pulling image "mongo"
+  Normal   Pulled          2m11s                 kubelet            Successfully pulled image "mongo" in 357ms (465ms including waiting). Image size: 854891519 bytes.
+  Normal   Created         2m11s                 kubelet            Created container: mongo
+  Normal   Started         2m11s                 kubelet            Started container mongo
+
+
+######################################################################################
+## Login to terminal of container 
+######################################################################################
+
+kctl exec  -it [pod name] -- bin/bash     ## NOTE:  -it == interactive terminal
+
+Puts you into a bash shell into the specific pod:
+
+kctl exec -it mong-deply-659b9dd647-9wqtv -- bin/bash
+root@mong-deply-659b9dd647-9wqtv:/# ps -ef
+UID          PID    PPID  C STIME TTY          TIME CMD
+mongodb        1       0  0 03:08 ?        00:00:02 mongod --bind_ip_all
+root          66       0  0 03:18 pts/0    00:00:00 bin/bash
+root          79      66  0 03:19 pts/0    00:00:00 ps -ef
 
 
 
+######################################################################################
+## Delete the Deployment ( and the Replicaset and the Pods )
+######################################################################################b
+kctl get deploy
+NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+mong-deply   1/1     1            1           28m
+nginx-dep    1/1     1            1           59m
+
+kctl get pod
+NAME                          READY   STATUS    RESTARTS      AGE
+mong-deply-659b9dd647-9wqtv   1/1     Running   8 (18m ago)   29m
+nginx-dep-579d65b68f-7zn5w    1/1     Running   1 (17m ago)   39m
+
+kctl delete deployment mong-deply
+deployment.apps "mong-deply" deleted      
+
+
+NOTE: pod and replicaset are now DELETED
+
+kctl get pod
+NAME                         READY   STATUS    RESTARTS      AGE
+nginx-dep-579d65b68f-7zn5w   1/1     Running   1 (19m ago)   40m
+
+kctl get replicaset
+NAME                   DESIRED   CURRENT   READY   AGE
+nginx-dep-579d65b68f   1         1         1       40m
+nginx-dep-5879cc9      0         0         0       61m
+
+Now let's get rid of nginx:
+
+kctl delete deployment nginx-dep
+deployment.apps "nginx-dep" deleted
+
+kctl get replicaset
+No resources found in default namespace.
+
+kctl get pod
+No resources found in default namespace.
+
+ALL CRUD OPERATIONS HAPPENS AT DEPLOYMENT LEVEL (replicasets and pods are handled automatically) 
 
 
 
+######################################################################################
+## Deploy via apply command
+######################################################################################b
+
+Deployments can be created via file and executed via:
+
+kubectl apply  -f [file name]
+
+
+Apply a configuration to a resource by file name or stdin. The resource name must be specified. This resource will be
+created if it doesn't exist yet. To use 'apply', always create the resource initially with either 'apply' or 'create
+--save-config'.
+
+ JSON and YAML formats are accepted.
+
+Examples:
+  # Apply the configuration in pod.json to a pod
+  kubectl apply -f ./pod.json
+  
+  # Apply resources from a directory containing kustomization.yaml - e.g. dir/kustomization.yaml
+  kubectl apply -k dir/
+  
+  # Apply the JSON passed into stdin to a pod
+  cat pod.json | kubectl apply -f -
+  
+  # Apply the configuration from all files that end with '.json'
+  kubectl apply -f '*.json'
+
+## Basic deployment yaml file: nginx-deployment.yaml
+
+apiVersion: apps/vi
+kind: Deployment                # Type of resource to create
+metadata: 
+  name: nginx-deployment        # Deployment name
+  labels: 
+    app: nginx                  # label
+spec:                           # spec for deployment 
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: nginx
+  template:                                          ------+
+    metadata:                                              |
+      labels:                                              |
+        app: nginx                                         |
+    spec:                       # spec for pod             +--- blueprint for pod
+      containers:                                          |
+        - name: nginx                                      |
+          image: nginx:1.16                                |
+          ports:                                           |
+            - containerPort: 80                      ------+
+
+## Now apply yaml config file 
+
+kctl apply -f nginx-deployment.yaml 
+deployment.apps/nginx-deployment created
+
+kctl get deployment
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-deployment   1/1     1            1           7s
+
+kctl get replicaset
+NAME                          DESIRED   CURRENT   READY   AGE
+nginx-deployment-7f65fcf556   1         1         1       12s
+
+kctl get pod
+NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-7f65fcf556-d9zcr   1/1     Running   0          16s
+
+
+You can delete the same way: 
+
+kctl delete  -f nginx-deployment.yaml 
+
+SUMMARY: 
+
+CRUD 
+  kctl create deployment [name]
+  kctl edit   deployment [name]
+  kctl delete deployment [name]
+
+Status
+  kctl get nodes | pod | services | replicaset | deployment
+
+Debug
+  kctl logs [pod name]                    ## Log to console 
+  kctl -exec -it [pod name] -- bin/bash   ## Get interatcive terminal into pod
+  kctl describe [pod name]                ## Get information about pod
+
+CRUD by file 
+  kctl apply  -f [file name]
+  kctl delete -f [file name]
 
 
 
-
-
-
-
-
-
+LAST HERE 1:02:04
 
 
 Hashicorp Vault
 https://www.youtube.com/watch?v=klyAhaklGNU
-
 
 .
