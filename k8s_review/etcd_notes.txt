@@ -1,0 +1,299 @@
+Notes on etcd: 
+from: 
+
+https://learnk8s.io/etcd-kubernetes
+
+
+K8s has three categories control planes:
+    - Centralized controllers (master nodes): 
+        - Scheduler / Controller Manager / 3rd part controllers
+            - configure pods and other resources
+
+    - Node-specific processes:
+        - Kubelet
+            - handles details of setting up pods and networking 
+              based on desired confirguration
+
+    - API Server:
+        - Coordinates between all of the control plan processes and nodes
+
+
+API Server does little:
+    - Determines whether API call is authorized (RBAC)
+    - Possibly changes payload of the API call through mutating webhooks
+    - Determines wheter payload is valid (internal validation / validating webhooks)
+    - Persists API payload and returns requested info
+    - Potentially notifies subscribers of the API endpoint that object has changed
+
+        1.                              2.                          3. 
+       [ Create deployment ]   -->>   [ K8s API Server   ]   -->>  [ API Server   -->>  etcd      ]
+ kubectl apply -f deployment.yaml     [ checks auth/auth ]         [ Deployment def saved to etcd ]
+                                                                           |
+                     +-----------------------------------------------------+
+                     |                                                          
+       4.            |                                 5.                   
+       [ Controller Manager notified of  ]   -->>      [ Deployment and ReplicaSet     ]
+       [ new deployment resource in etcd ]             [ create and store pods in etcd ]
+
+
+
+
+                                            +-etcd-----------------------------+
+                [  API    ]-----------------|  [Deployment #1]                 |
+                [  Server ]---+             |  [Pod#1 pending]                 |
+                              |             |  [Pod#2 pending]                 |
+                        [ Control ]         |  [Pod#3 pending]                 |
+                        [ Manager ]         |                                  |
+                                            |                                  |
+                                            +----------------------------------+
+
+NOTE: API server is a CRUD app, it mostly stores and serves data. 
+      Hence it needs a database i.e. etcd
+
+
+etcd: strongly consistent, distributed key-value store
+        - no stale data
+        - highly available
+        - change notification
+            - allows clients to subscribe to changes to a particular key or set of keys
+        - Raft algo for leader election
+        - Writes come from leader to follower
+            - if follower gets write request it is forwarded to leader
+        - Majority of nodes must pick leader, if not cluster is unavailable
+        - More nodes added, better availability but worse the performance
+
+## Getting / Running etcd
+curl -LO https://github.com/etcd-io/etcd/releases/download/v3.5.0/etcd-v3.5.0-linux-amd64.tar.gz
+tar xzvf etcd-v3.5.0-linux-amd64.tar.gz
+cd etcd-v3.5.0-linux-amd64
+
+Made up of 3 binaries:
+    etcd   : server
+    etcdctl: client library for interacting with server
+    etcdutl: helper utilities for ops i.e. backups
+
+
+NOTE:   The etcd API changed significantly between v2 and v3. 
+        To use the new API, you have to explicitly set an environment variable before running etcdctl.
+        To use the v3 API:  export ETCDCTL_API=3
+
+i.e.
+export ETCDCTL_API=3
+etcdctl put foo bar
+etcdctl get foo 
+foo
+bar 
+
+## also --print-value-only / --write-out=json
+
+NOTE:  Every time a write operation happens in the cluster, 
+        etcd creates a new version of its dataset, and the revision number is incremented.
+
+Key / Value  are base64 encoded 
+
+can query by revision (time travel) via --rev 
+
+etcdctl get foo  --rev=2 --print-value-only
+etcdctl get foo  --rev=3 --print-value-only
+
+
+# delete key    
+etcdctl del foo  
+
+NOTE: can time travel to value before deletion
+
+
+# get multiple keys or use prefix 
+
+./etcdctl put myprefix/key1 thing1
+./etcdctl put myprefix/key2 thing2
+./etcdctl put myprefix/key3 thing3
+./etcdctl put myprefix/key4 thing4
+
+
+./etcdctl get myprefix/key2 myprefix/key4
+myprefix/key2
+thing2
+myprefix/key3
+thing3
+
+
+./etcdctl get --prefix myprefix/
+myprefix/key1
+thing1
+myprefix/key2
+thing2
+myprefix/key3
+thing3
+myprefix/key4
+thing4
+
+
+# watch (subscribe) 
+./etcdctl watch --prefix myprefix/      # This will show updates happening on this prefix
+
+# start a node (see URL for other two nodes)
+./etcd --data-dir=/tmp/etcd/data1 --name node1 \
+  --initial-advertise-peer-urls http://127.0.0.1:2380 \
+  --listen-peer-urls http://127.0.0.1:2380 \
+  --advertise-client-urls http://127.0.0.1:2379 \
+  --listen-client-urls http://127.0.0.1:2379 \
+  --initial-cluster node1=http://127.0.0.1:2380,node2=http://127.0.0.1:3380,node3=http://127.0.0.1:4380 \
+  --initial-cluster-state new \
+  --initial-cluster-token mytoken
+
+# giving client ENDPOINT list to communicate to 
+export ENDPOINTS=127.0.0.1:2379,127.0.0.1:3379,127.0.0.1:4379
+./etcdctl --endpoints=$ENDPOINTS member list --write-out=table
+
+
+
+
+# kille one of the nodes in the background and run a endpoint status to get state
+./etcdctl --endpoints=$ENDPOINTS endpoint status --write-out=table
+
+
+
+
+{
+  "level": "warn",
+  "ts": "2021-06-23T15:43:40.378-0700",
+  "logger": "etcd-client",
+  "caller": "v3/retry_interceptor.go:62",
+  "msg": "retrying of unary invoker failed",
+  "target": "etcd-endpoints://0xc000454700/#initially=[127.0.0.1:2379;127.0.0.1:3379;127.0.0.1:4379]",
+  "attempt": 0,
+  "error": "rpc error: code = DeadlineExceeded ... connect: connection refused\""
+}
+Failed to get the status of endpoint 127.0.0.1:2379 (context deadline exceeded)
++----------------+------------------+-----------+------------+--------+
+|    ENDPOINT    |        ID        | IS LEADER | IS LEARNER | ERRORS |
++----------------+------------------+-----------+------------+--------+
+| 127.0.0.1:3379 | a2f3309a1583fba3 |      true |      false |        |
+| 127.0.0.1:4379 | 5c5501077e83a9ee |     false |      false |        |
++----------------+------------------+-----------+------------+--------+
+
+# if you kill two nodes than there isn't a quorum, won't be able to put or get 
+
+./etcdctl --endpoints=$ENDPOINTS endpoint status --write-out=table
+{"level":"warn","ts":"2021-06-23T15:47:05.803-0700","logger":"etcd-client","caller":"v3/retry_i ...}
+Failed to get the status of endpoint 127.0.0.1:2379 (context deadline exceeded)
+{"level":"warn","ts":"2021-06-23T15:47:10.805-0700","logger":"etcd-client","caller":"v3/retry_i ...}
+Failed to get the status of endpoint 127.0.0.1:3379 (context deadline exceeded)
++----------------+------------------+-----------+------------+-----------------------+
+|    ENDPOINT    |        ID        | IS LEADER | IS LEARNER |        ERRORS         |
++----------------+------------------+-----------+------------+-----------------------+
+| 127.0.0.1:4379 | 5c5501077e83a9ee |     false |      false | etcdserver: no leader |
++----------------+------------------+-----------+------------+-----------------------+
+
+./etcdctl --endpoints=$ENDPOINTS get mykey
+{
+  "level": "warn",
+  "ts": "2021-06-23T15:48:31.987-0700",
+  "logger": "etcd-client",
+  "caller": "v3/retry_interceptor.go:62",
+  "msg": "retrying of unary invoker failed",
+  "target": "etcd-endpoints://0xc0001da000/#initially=[127.0.0.1:2379;127.0.0.1:3379;127.0.0.1:4379]",
+  "attempt": 0,
+  "error": "rpc error: code = Unknown desc = context deadline exceeded"
+}
+
+
+# interacting with etcd with a minikube install.  Setup because etcd is setup with mutual TLS auth
+
+export ETCDCTL=$(cat <<EOF
+sudo ETCDCTL_API=3 ./etcdctl --cacert /var/lib/minikube/certs/etcd/ca.crt \n
+  --cert /var/lib/minikube/certs/etcd/healthcheck-client.crt \n
+  --key /var/lib/minikube/certs/etcd/healthcheck-client.key
+EOF
+)
+
+$ETCDCTL member list --write-out=table
+
+docker@minikube:~/etcd$ sudo ./etcdctl.sh member list 
+aec36adc501070cc, started, minikube, https://192.168.49.2:2380, https://192.168.49.2:2379, false
+docker@minikube:~/etcd$ sudo ./etcdctl.sh member list  --write-out=table
++------------------+---------+----------+---------------------------+---------------------------+------------+
+|        ID        | STATUS  |   NAME   |        PEER ADDRS         |       CLIENT ADDRS        | IS LEARNER |
++------------------+---------+----------+---------------------------+---------------------------+------------+
+| aec36adc501070cc | started | minikube | https://192.168.49.2:2380 | https://192.168.49.2:2379 |      false |
++------------------+---------+----------+---------------------------+---------------------------+------------+
+
+
+NOTE:  This was run by logging into minikube (ssh ansible@minikube) and then logging into docker (minikube ssh).
+       There the binaries and the scripts were copied (ssh cp) into docker and are located in /home/docker/etcd/
+
+
+Kubernetes stores everything in the /registry prefix 
+
+docker@minikube:~/etcd$ sudo ./etcdctl.sh get --prefix /registry | wc -l
+6878
+
+docker@minikube:~/etcd$ sudo ./etcdctl.sh get --prefix /registry/pods | wc -l
+605
+
+The naming scheme is:  /registry/pods/<namespace>/<pod-name>
+
+docker@minikube:~/etcd$ sudo ./etcdctl.sh get --prefix /registry/pods --keys-only 
+/registry/pods/kube-system/coredns-668d6bf9bc-nps9t
+/registry/pods/kube-system/etcd-minikube
+/registry/pods/kube-system/kube-apiserver-minikube
+/registry/pods/kube-system/kube-controller-manager-minikube
+/registry/pods/kube-system/kube-proxy-9jtd7
+/registry/pods/kube-system/kube-scheduler-minikube
+/registry/pods/kube-system/storage-provisioner
+/registry/pods/kubernetes-dashboard/dashboard-metrics-scraper-5d59dccf9b-6tsml
+/registry/pods/kubernetes-dashboard/kubernetes-dashboard-7779f9b69b-4k46w
+
+
+i.e. get the schedule info
+docker@minikube:~/etcd$ sudo ./etcdctl.sh get --prefix /registry/pods/kube-system/ --keys-only | grep scheduler
+/registry/pods/kube-system/kube-scheduler-minikube
+
+
+Accessing data directly will give binary results.  
+
+
+NOTE: k3s can be setup to NOT use etcd.  Default is to use SQLite as backend.  
+      k3s uses "Kine" == Kine is not etcd
+
+Kine is a shim that translates etcd API calls into actual SQL queries 
+
+                                              +-->  [ SQLite ]
+                                              | 
+            [ API Server ]  -->>  [ Kine ]  --+-->  [ PostgreSQL ]
+                                              | 
+                                              +-->  [ MySQL ]
+
+
+example  template for listing keys by prefix in Kine SQL driver:
+
+SELECT (%s), (%s), %s
+FROM kine AS kv
+JOIN (
+  SELECT MAX(mkv.id) AS id
+  FROM kine AS mkv
+  WHERE
+    mkv.name LIKE ?
+    %%s
+  GROUP BY mkv.name) maxkv
+ON maxkv.id = kv.id
+WHERE
+    (kv.deleted = 0 OR ?)
+ORDER BY kv.id ASC
+
+Kine uses a single table that holds keys, values and extra metadata
+Prefix queries are translated into SQL LIKE queries
+
+
+etcd is the only stateful part of the Kubernetes control plan.
+
+==================================================================================================
+
+Now for something completely different:
+
+Installed mermaid plugin for charts / diagrams 
+
+https://mermaid.js.org/ecosystem/integrations-community.html#file-extension
+
+https://mermaid.js.org/syntax/architecture.html
