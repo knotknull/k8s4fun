@@ -908,7 +908,85 @@ CRUD by file
 
 
 
-LAST HERE 1:02:04
+
+######################################################################################
+## K8s YAML and Conig File
+######################################################################################
+
+- connect Deployments to Service to Pods
+
+
+
+- 3 parts of a config file
+  1. Metadata:  name, labels etc
+  2. Specification:  configuration for the component
+  3. Status: generated and added by k9s
+    - desired state (replicas 2) vs. actual state
+    If desired != actual then k8s will try to fix 
+      - i.e self-healing cluster
+      - updates state continuously 
+
+NOTE: etcd holds status / updates     
+
+## nginx-deployment.yaml
+## 
+apiVersion: apps/v1
+kind: Deployment           <<---- Kind of component
+metadata:                  <<---- Metadata 
+  name: nginx-deployment            - name
+  labels:
+spec:                      <<---- Metadata
+  repilcas: 2
+  selector:
+  template:
+
+
+
+## nginx-service.yaml
+## 
+apiVersion: v1
+kind: Service              <<---- Kind of component
+metadata:                  <<---- Metadata
+  name: nginx-service               - name
+  labels:
+spec:                      <<---- Metadata
+  selector:
+  ports:
+
+
+## YAML config file format
+  - human friendly / strict on indendentation
+    NOTE: yamllint.com, online validator
+
+- store yaml with code 
+
+
+
+template: 
+ - has own metadata and spec section
+ - template configuation applies to a pod 
+ - blueprint for a pod
+    - image / port / container name
+
+
+
+template: 
+  metadata: 
+    labels: 
+      app: nginx 
+  spec:
+    containers: 
+    - name: nginx  
+      image: nginx:1.16  
+      ports: 
+      - containerPort: 8080
+
+# connecting components:  labels and selectors and ports
+[1:08:03]
+
+
+
+
 
 
 Hashicorp Vault
