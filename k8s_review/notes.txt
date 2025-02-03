@@ -982,10 +982,212 @@ template:
       - containerPort: 8080
 
 # connecting components:  labels and selectors and ports
-[1:08:03]
+- labels and selectors make the "connection" between deployment and service 
+  - metadata contains labels 
+  - spec     contains selectors 
+ex. 
 
 
 
+## nginx-deployment.yaml
+## 
+apiVersion: apps/v1
+kind: Deployment           
+metadata:                  
+  name: nginx-deployment           
+  labels:
+    app: nginx             <<---- Deployment label (Used by Service Selector)
+spec:                      
+  repilcas: 2
+  selector:                <<---- Selector matches the pod label 
+    matchLabels:
+      app: nginx
+  template:       ------+
+    metadata:           |
+      labels:           +--- NOTE: pods get label thru template blueprint
+        app: nginx      |
+                  ------+
+
+
+## nginx-service.yaml
+## 
+apiVersion: v1
+kind: Service              
+metadata:                  
+  name: nginx-service      
+  labels:
+spec:                      
+  selector:      -------+
+    app: nginx          |-------- Service Selector matches Service to Deployment 
+  ports:         -------+          (matches service - selector to Deployment label, and pods declares in template )
+
+
+# Connecting Deployment to Pods
+  - component has a key value pair
+  i.e.  labels:
+          app: nginx   key/valu pair associated with component
+
+The pod (via template) gets a label :  app: nginx 
+This is the same label that is in the Deployment label
+The spec: of the Deployment determines matches key/values app: nginx in the Deployment and template 
+spec:
+  replicas: 2 
+  selector: 
+    matchLabels:      << Match the deployment to the pod template 
+      app: nginx
+
+
+## Ports 
+
+## nginx-service.yaml
+## 
+apiVersion: v1
+kind: Service              
+metadata:                  
+  name: nginx-service      
+  labels:
+spec:                      
+  selector:      
+    app: nginx   
+  ports:
+    - protocol: TCP         
+      port: 80            NOTE: port is the port that the Service respons externally on 
+      targetPort: 8080    NOTE: targetPort is the port of the Pod (container) to connect to 
+
+
+
+## nginx-deployment.yaml
+## 
+apiVersion: apps/v1
+kind: Deployment           
+.... 
+  template:       
+    metadata:      
+      labels:       
+        app: nginx   
+    spec:      
+      containers: 
+      - name: nginx    
+        image: nginx:1.16 
+        ports: 
+        - containerPort: 8080  NOTE: containerPort is linked to Service targetPort
+                  
+
+NOTE: The service / deploy files are in k8s_review/deploy_service/ folder
+      (copied to minikube)
+
+kubectl apply -f nginx-deployment.yaml
+kubectl apply -f nginx-service.yaml
+kubectl get pod
+kubectl get service
+kubectl describe service nginx-service
+
+kctl describe service nginx-service
+Name:                     nginx-service
+Namespace:                default
+Labels:                   <none>
+Annotations:              <none>
+Selector:                 app=nginx
+Type:                     ClusterIP
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.110.168.194
+IPs:                      10.110.168.194
+Port:                     <unset>  80/TCP
+TargetPort:               8080/TCP
+Endpoints:                10.244.0.25:8080,10.244.0.26:8080  <---------------+
+Session Affinity:         None                                               |
+Internal Traffic Policy:  Cluster                                            |
+Events:                   <none>                                          matches 
+                                                                             |
+## get pod information to match up with Endpoints above                      |
+kctl get pod -o wide                                                         |
+                                                                             v
+NAME                                READY   STATUS    RESTARTS   AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+nginx-deployment-687d5fb844-6q6js   1/1     Running   0          4m53s   10.244.0.26   minikube   <none>           <none>
+nginx-deployment-687d5fb844-hnpv6   1/1     Running   0          4m53s   10.244.0.25   minikube   <none>           <none>
+
+
+## get the status of the deployment  ( this is in etc )
+kctl get deployment nginx-deployment -o yaml
+
+ApiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"nginx"},"name":"nginx-deployment","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"nginx"}},"template":{"metadata":{"labels":{"app":"nginx"}},"spec":{"containers":[{"image":"nginx:1.16","name":"nginx","ports":[{"containerPort":8080}]}]}}}}
+  creationTimestamp: "2025-02-03T00:26:09Z"
+  generation: 1
+  labels:
+    app: nginx
+  name: nginx-deployment
+  namespace: default
+  resourceVersion: "23248"
+  uid: d6e4a9ae-8482-4c12-ba91-c498725fb215
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.16
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 2
+  conditions:
+  - lastTransitionTime: "2025-02-03T00:26:10Z"
+    lastUpdateTime: "2025-02-03T00:26:10Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2025-02-03T00:26:09Z"
+    lastUpdateTime: "2025-02-03T00:26:10Z"
+    message: ReplicaSet "nginx-deployment-687d5fb844" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 2
+  replicas: 2
+  updatedReplicas: 2
+
+
+
+# Can delete the Deployment and Service using the same yaml files 
+
+kubectl delete -f nginx-deployment.yaml
+kubectl delete -f nginx-service.yaml
+
+
+[1:16:16]
 
 
 
