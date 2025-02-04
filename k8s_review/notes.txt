@@ -1037,10 +1037,10 @@ spec:                                   Service selector  +---->  app: nginx
   selector:                                               |       - protocol: TCP
     matchLabels:                                          |         port: 80  <---------Service external port
       app: nginx    <-------------+                       |        targetPort: 8080
-  template:                       |                       |                      ^
-    metadata:                     + Deployment uses       |                      |
-      labels:                     | matchLabels to match  |                      |  Service target port
-        app: nginx  <-------------+  pod template label   |                      |  matches container port
+  template:                       | Deployment uses       |                      ^
+    metadata:                     + matchLabels to match  |                      |
+      labels:                     | pod template label    |                      |  Service target port
+        app: nginx  <-------------+                       |                      |  matches container port
     spec:       ^+----------------------------------------+                      |
       containers:                                                                |
       - name: nginx                                                              |
@@ -1250,7 +1250,9 @@ NOTE: see code in k8s_review/mongodb_app
       Also, Deployment and Service YAML are together in one file 
 
 
-### kubectl apply commands in order
+### kubectl apply commands in order,   
+### NOTE: ORDER IS IMPORTANT.  Must deploy resources (i.e. secrets) BEFORE
+###       they can be referenced in Deployments 
     
     kubectl apply -f mongo-secret.yaml
     kubectl apply -f mongo.yaml
@@ -1333,9 +1335,310 @@ minikube service mongo-express-service
 ## K8s Namespaces
 ######################################################################################
 
+Namespace 
+ - can organize resources in namespace 
+ - think of as a virtual cluster within k8s
+
+4 namespaces by default
+
+kctl get namespace
+NAME                   STATUS   AGE
+default                Active   6d11h
+kube-node-lease        Active   6d11h
+kube-public            Active   6d11h
+kube-system            Active   6d11h
+kubernetes-dashboard   Active   6d11h   
+     +----- << Shipped with minikube
+                                                                +----------k8s------------+
+                                                                | namespace:              |
+1. kube-system:                                                 |                         |  
+  - do not crate / modify kube-system                           | [kube-system]           |
+  - system processes                                            |                         |
+  - Master and kubectl processes                                | [kube-public]           |
+                                                                |                         |
+2. kube-public:                                                 | [kube-node-lease]       |
+  - publicly accessible data                                    |                         |
+  - config map that contains cluster informatiion               | [default]               |                                 |
+     - accessible without authenticatio                         |                         |
+  i.e. kubectl cluster-info                                     +-------------------------+
+
+Kubernetes control plane is running at https://192.168.49.2:8443
+CoreDNS is running at https://192.168.49.2:8443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
+3. kube-node-lease:  
+  - holds info of heartbeats of nodes
+  - each node has associated lease object in namespace
+  - determines availability of a node
+
+4. default
+  - default location for creating resources 
+
+# Create a namespace via:
+  kubectl create namespace map-nmspace 
+  kubectl get namespaces 
+
+# Create a namespace fia config file:
+
+mynamespace-configmap.yaml
+------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-configmap
+  namespace: my-namespace
+data:
+  db_url: mysql-service.database
+
+# Why use a namespace
+1. Organize resources
+  - resources become unorganized quickly
+  - allows for grouping of related resources
+
++------------------k8s--------------------+
+| +-[database]---+      +-[monitoring]-+  |
+| | [ ]    [ ]   |      |     [ ]      |  |
+| |              |      | [ ]    [ ]   |  |
+| +--------------+      +--------------+  |
+|                                         |
+|                                         |
+| +-[elastic stack]-+   +[nginx-ingress]+ |
+| |                 |   |  [ ]    [ ]   | |
+| | [ ]     [ ]     |   |      [ ]      | |
+| +-----------------+   +---------------+ |
+|                                         |
++------------------k8s--------------------+
+
+NOTE: K8s documentations states that SHOULD NOT use namespaces 
+  for small projects, up to 10 users. YMMV
 
 
-[1:46:20]
+2. Avoid conflicts from multiple teams
+  team1: my-app Deployment in default
+  team2: my-app Deployment in default
+    - team2 OVERWRITE team1 deployment
+
+- using namespaces segregates the two teams
+
+  
++------------------k8s--------------------+
+|                                         |
+| +-[team1-ns]---+      +-[team2-ns]---+  |
+| | [ my-app ]   |      | [ my-app ]   |  |       
+| |              |      | [ my-app ]   |  |
+| +--------------+      +--------------+  |
+|                                         |
++------------------k8s--------------------+
+
+
+3. Resource sharing:  staging / dev
+   - don't need to setup separate clusters for Stage / Dev
+
++--------------------k8s-----------------------+
+|                                              |
+|  +-[Staging] ---+        +-[Dev]--------+    |
+|  | [ my-app ]   |        | [ my-app ]   |    |       
+|  |              |        | [ my-app ]   |    |
+|  +--------------+        +--------------+    |
+|         |                       |            |
+|         +------------+----------+            |
+|                      |                       |
+|  (reuse components   |  for stage and dev)   |
+|         +------------+----------+            |
+|         |                       |            |
+|  +-[Nginx-Ingress]-+    +-[Elastic Stack]-+  |    
+|  | [ .. ]          |    | [ my-app ]      |  |    
+|  |        [ .. ]   |    |                 |  |    
+|  +-----------------+    +-----------------+  |    
+|                                              |
++----------------------k8s---------------------+
+
+
+3a. Blue-Green Deployment
+   - don't need to setup separate cluster for Blue/Green
+
++--------------------k8s-----------------------+
+|                                              |
+|  +-[PROD-Blue]--+        +-[PROD-Green]-+    |
+|  | [ my-app ]   |        | [ my-app ]   |    |       
+|  |              |        | [ my-app ]   |    |
+|  +--------------+        +--------------+    |
+|         |                       |            |
+|         +------------+----------+            |
+|                      |                       |
+|                      |                       |
+|         +------------+----------+            |
+|         |                       |            |
+|  +-[Nginx-Ingress]-+    +-[Elastic Stack]-+  |    
+|  | [ .. ]          |    | [ my-app ]      |  |    
+|  |        [ .. ]   |    |                 |  |    
+|  +-----------------+    +-----------------+  |    
+|                                              |
++----------------------k8s---------------------+
+
+
+4. Access and Resource Limits on Namespaces (w/ Multiple Teams)
+   - Teams can only access / update their own namespace
+   - Limit CPU, RAM, Storage per Namespace
+        - via Resource Quota
+
+               +--------------------k8s-----------------------+
+               |                                              |
+               |  +-[Project-A]--+        +-[Project-B]--+    |
+               |  | [ my-app ]   |        | [ my-app ]   |    |       
+               |  |              |        | [ my-app ]   |    |
+               |  +--------------+        +--------------+    |
+               | [Resource Quota A]      [Resource Quota B]   |
+               | [2CPU 16GB RAM...]      [1CPU 8GB RAM ...]   |
+               |                                              |
+               +----------------------k8s---------------------+
+
+
+# Characteristics of a Namespace
+ - Can't access most resources from another Namespace
+  - Each Namespace MUST DEFINE own ConfigMap
+  - Each Namespace MUST DEFINE own Secret (even for shared service)
+
+ - Can access a service i.e.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-configmap
+  namespace: my-namespace
+data:
+  db_url: mysql-service.database
+                |          |
+  name ---------+          +-------- namespace
+
+               +--------------------k8s-----------------------+
+               |                                              |
+               |  +-[Project-A]--+        +-[Project-B]--+    |
+               |  | [ my-app ]   |        | [ my-app ]   |    |       
+               |  |              |        | [ my-app ]   |    |
+               |  +--------------+        +--------------+    |
+               |                                              |
+               |           +--[database]------+               |
+               |           |                  |               |
+               |           | [mysql-service]  |               |
+               |           |                  |               |
+               |           +------------------+               |
+               |                                              |
+               +----------------------k8s---------------------+
+
+
+# K8s Components NOT in namespace
+ - live globally in a cluster
+ - can't isolate them
+
+               +--------------------k8s-----------------------+
+               |                                              |
+               |  +-[Project-A]--+        +-[Project-B]--+    |
+               |  | [ my-app ]   |        | [ my-app ]   |    |       
+               |  |              |        | [ my-app ]   |    |
+               |  +--------------+        +--------------+    |
+               |                                              |
+               |     [ ------ ]           [ ------ ]          |      
+               |     [ Volume ]           [  Node  ]          |
+               |     [ ------ ]           [ ------ ]          |
+               |                                              |
+               +----------------------k8s---------------------+
+
+# list NON-namespaced resources
+kubectl api-resource --namespaced=falee
+
+
+kctl api-resources --namespaced=false
+NAME                                SHORTNAMES   APIVERSION                        NAMESPACED   KIND
+namespaces                          ns           v1                                false        Namespace
+nodes                               no           v1                                false        Node
+persistentvolumes                   pv           v1                                false        PersistentVolume
+componentstatuses                   cs           v1                                false        ComponentStatus
+....
+apiservices                                      apiregistration.k8s.io/v1         false        APIService
+certificatesigningrequests          csr          certificates.k8s.io/v1            false        CertificateSigningRequest
+csidrivers                                       storage.k8s.io/v1                 false        CSIDriver
+csinodes                                         storage.k8s.io/v1                 false        CSINode
+storageclasses                      sc           storage.k8s.io/v1                 false        StorageClass
+volumeattachments                                storage.k8s.io/v1                 false        VolumeAttachment
+
+
+# list namespaced resources
+
+kctl api-resources --namespaced=true
+NAME                        SHORTNAMES   APIVERSION                     NAMESPACED   KIND
+bindings                                 v1                             true         Binding
+configmaps                  cm           v1                             true         ConfigMap
+deployments                 deploy       apps/v1                        true         Deployment
+endpoints                   ep           v1                             true         Endpoints
+events                      ev           v1                             true         Event
+persistentvolumeclaims      pvc          v1                             true         PersistentVolumeClaim
+pods                        po           v1                             true         Pod
+replicasets                 rs           apps/v1                        true         ReplicaSet
+resourcequotas              quota        v1                             true         ResourceQuota
+secrets                                  v1                             true         Secret
+serviceaccounts             sa           v1                             true         ServiceAccount
+services                    svc          v1                             true         Service
+....
+statefulsets                sts          apps/v1                        true         StatefulSet
+
+
+
+## Create a component in a namespace 
+ - no namespace defined, created in default namespace
+ - if you don't pass a namespace to kubectl it will use default
+      i.e. kctl get configmap == kctl get configmap -n default
+1. pass --namespace parameter to apply 
+
+  kubectl apply -f mynamespace-configmap.yaml --namespace=map-ns
+
+
+2. configure namespace: attribute in ConfigMap yaml file
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-configmap
+  namespace: my-namespace
+data:
+  db_url: mysql-service.database
+
+NOTE: use -n option to get for that namespace 
+
+kubectl get configmap -n map-ns
+
+
+BEST PRACTICE:  configure namespace attribute in yaml and not via kubectl --namespace
+  this way the configuration is captured IN THE CODE
+
+
+
+## Change an active namespace 
+kubens (separate tool )
+NOTE: installed via: 
+         sudo snap install kubectx --classic
+
+kubens    # highlights active namespace and all others
+default
+kube-node-lease
+kube-public
+kube-system
+kubernetes-dashboard
+map-nmspace
+
+kubens map-nmspace  # switch from default to map-nmspace
+
+nsible@minikube:~/mongo_demo$ kubens map-nmspace
+✔ Active namespace is "map-nmspace"
+
+
+
+######################################################################################
+## K8s Ingress
+######################################################################################
+
+[ 2:01:53 ]
 
 
 
