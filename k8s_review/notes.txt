@@ -1000,7 +1000,7 @@ metadata:
 spec:                      
   repilcas: 2
   selector:                <<---- Selector matches the pod label 
-    matchLabels:
+    
       app: nginx
   template:       ------+
     metadata:           |
@@ -1020,6 +1020,34 @@ spec:
   selector:      -------+
     app: nginx          |-------- Service Selector matches Service to Deployment 
   ports:         -------+          (matches service - selector to Deployment label, and pods declares in template )
+
+
+
+
+       Deployment                                                 Service 
+---------------------------                                  -------------------
+apiVersion: apps/v1                                           apiVersion: v1
+kind: Deployment                                              kind: Service
+metadata:                                                     metadata:
+  name: nginx-deployment                                        name: nginx-service
+  labels:                                                     spec:
+     app: nginx                                                 selector:
+spec:                                   Service selector  +---->  app: nginx
+  replicas: 2                          matches pod label  |     ports:
+  selector:                                               |       - protocol: TCP
+    matchLabels:                                          |         port: 80  <---------Service external port
+      app: nginx    <-------------+                       |        targetPort: 8080
+  template:                       |                       |                      ^
+    metadata:                     + Deployment uses       |                      |
+      labels:                     | matchLabels to match  |                      |  Service target port
+        app: nginx  <-------------+  pod template label   |                      |  matches container port
+    spec:       ^+----------------------------------------+                      |
+      containers:                                                                |
+      - name: nginx                                                              |
+        image: nginx:1.16                                                        |
+        ports:                                                                   |
+        - containerPort: 8080   <------------------------------------------------+
+                                 
 
 
 # Connecting Deployment to Pods
@@ -1186,8 +1214,128 @@ status:
 kubectl delete -f nginx-deployment.yaml
 kubectl delete -f nginx-service.yaml
 
+## Demo Apps 
+MongoDB , mongo-express
+ 2 Deployments / pod
+ 2 Service
+ 1 ConfigMap 
+ 1 Secret
 
-[1:16:16]
+
+Internal Service   [ConfigMap]                      Deployment.yaml
+                   [ DB URL  ]                      (Env Variables)
+
+[MongoDB ] <---------------------------------------- [MongoExpress] <------ [ External Service ]
+                    [Secret ]
+                    [DB User]
+                    [DB Pass]
+
+## Anatomy of a Secret File
+apiVersion: v1
+kind: Secret
+metadata:
+    name: mongodb-secret
+type: Opaque
+data:
+    mongo-root-username: dXNlcm5hbWU=   <<--= BASE64 Encoded
+    mongo-root-password: cGFzc3dvcmQ=   <<--= BASE64 Encoded
+
+# how to get base64
+ echo -n 'username' | base64
+
+
+
+NOTE: see code in k8s_review/mongodb_app
+      mongo-secret.yaml MUST BE DEPLOYED BEFORE  mongo or mongo-express because they reference it.
+      Also, Deployment and Service YAML are together in one file 
+
+
+### kubectl apply commands in order
+    
+    kubectl apply -f mongo-secret.yaml
+    kubectl apply -f mongo.yaml
+    kubectl apply -f mongo-configmap.yaml 
+    kubectl apply -f mongo-express.yaml
+
+### kubectl get commands
+
+    kubectl get pod
+    kubectl get pod --watch
+    kubectl get pod -o wide
+    kubectl get service
+    kubectl get secret
+    kubectl get all | grep mongodb
+
+### kubectl debugging commands
+
+    kubectl describe pod mongodb-deployment-xxxxxx
+    kubectl describe service mongodb-service
+    kubectl logs mongo-express-xxxxxx
+
+### give a URL to external service in minikube
+
+    minikube service mongo-express-service
+
+
+Anatomy of a mongo-express load balancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-express-service
+spec:
+  selector:
+    app: mongo-express
+  type: LoadBalancer         << type =- LoadBalancer 
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+      nodePort: 30000       << nodePort: ephemeral port for node, between 30000 - 32767
+
+Port for external IP address
+
+
+  
+kctl get service
+NAME                    TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+kubernetes              ClusterIP      10.96.0.1       <none>        443/TCP          6d1h
+mongo-express-service   LoadBalancer   10.110.253.68   <pending>     8081:30000/TCP   11m
+mongodb-service         ClusterIP      10.99.39.17     <none>        27017/TCP        23m
+
+NOTE: once everything is deployed, the mongo-express-service EXTERNAL-IP address is still <pending>.
+Have to take an extra setup with minikube (otherwise an External-IP would have been configured)
+ > minikube service mongo-express-service
+
+minikube service mongo-express-service
+|-----------|-----------------------|-------------|---------------------------|
+| NAMESPACE |         NAME          | TARGET PORT |            URL            |
+|-----------|-----------------------|-------------|---------------------------|
+| default   | mongo-express-service |        8081 | http://192.168.49.2:30000 |
+|-----------|-----------------------|-------------|---------------------------|
+🎉  Opening service default/mongo-express-service in default browser...
+👉  http://192.168.49.2:30000
+
+[External IP:30000] 
+    |
+    +--->> [ Mongo Express External Service ] 
+                |
+                +--->> [ Mongo Express Pod ] 
+                            |
+                            +--->> [ Mongo DB Internal Service ]
+                                           |
+                                           +--->> [ Mongo DB Pod ]
+
+
+
+######################################################################################
+## K8s Namespaces
+######################################################################################
+
+
+
+[1:46:20]
 
 
 
