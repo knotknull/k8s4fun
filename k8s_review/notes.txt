@@ -1638,10 +1638,211 @@ nsible@minikube:~/mongo_demo$ kubens map-nmspace
 ## K8s Ingress
 ######################################################################################
 
+
+                             +-------- https://124.89.101.2:35010
+                             |          (ip address of node and node port)
+                             |
+    +----k8s-----------------+-------------------+
+    |                        |                   |
+    |                        |                   |
+    |                [external service]          |
+    |                        |                   |
+    |                        v                   |
+    |  [myapp pod]<-- [myapp service] <--+       |
+    |                                    |       |   +-------- https://myapp.com
+    |                                    |       |   |
+    |                      [ myapp ingress  ] <--+---+
+    |                      [internal service]    |
+    |                                            |
+    +--------------------------------------------+
+
+# YAML config external vs. ingress service 
+
+# external service YAML
+# 
+apiVersion: v1
+kind: Service                    <<------------------------------------------+
+metadata:                                                                    |
+  name: myapp-external-service                                               |
+spec:                                                                        |
+  selector:                                                                  |
+    app: myapp                                                               |
+  type: LoadBalancer      ## NOTE: type: LoadBalancer makes this an External Service 
+  ports:
+    - protocol: TCP  
+      port: 8080  
+      targetPport: 8080  
+      nodePort: 35010     ## NOTE: the port of the node that will handle this traffic
+
+
+# Ingress service YAML
+# 
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress                    <<---------+ ## NOTE:  Ingress Service with Routing Rules
+metadata:                                   |
+  name: myapp-ingress                       |
+spec:                                       |
+  rules:                                    | 
+  - host: myapp.com              <<---------+-- host: name mapped to service 
+    http:                                   |   http:  NOT incoming http request from browser but forward to internal service
+      paths:                                |   path: URL path: /reports  /confg /etc
+      - backend:                            v
+          serviceName: myapp-internal-service  <<---------+
+          servicePort: 8080                               |
+                                                          |
+                                                          |
+# Internal Service config                                 +-------  Ingress backend.serviceName 
+#                                                         |                 backend.servicePort
+apiVersion: v1                                            |          maps  
+kind: Service                                             |          to
+metadata:                                                 |            
+  name: myapp-internal-service    <<----------------------+         Internal service.metadata.name
+spec:                                                               service.spec.ports.port 
+  selector:                                               
+    app: myapp                                            
+  ports:
+    - protocol: TCP  
+      port: 8080  
+      targetPport: 8080  
+
+
+NOTE:  - ingress.spec.rules.host should be a valid domain address (myapp.com)
+       - domain name SHOULD BE mapped to Node's IP address, which is the entry point   
+
+# Configuring Ingress in k8s cluster
+
+The below is not enough,  Need an "implementation" for Ingress >> Ingress Controller 
+
+ [pod: mayapp] <- [svc: myapp] <- [ingress: myapp] <- [pod: ingress controller]
+
+ingress controller: evaluates and processes Ingress rules
+  - manages redirections
+  - entrypoint to cluster 
+  - many 3rd party implementations i.e. K8s Nginx Ingress Controller, etc
+
+# ingress controllers 
+https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/
+
+# bare metal ingress controller 
+  https://kubernetes.github.io/ingress-nginx/deploy/baremetal/
+
+
+Environment where k8s is running: 
+
+# Cloud Provider
+ [Cloud Load Balancer] -----------------------------------------+
+                                                                | 
+                                                                v
+ [pod: mayapp] <- [svc: myapp] <- [ingress: myapp] <- [pod: ingress controller]
+
+# Bare Metal:  Need to configure and entry point 
+                - inside cluster or outside separate server
+                
+Proxy Server:  
+ - separate server (HW/SW) 
+ - public IP address and open ports 
+ - acts as entrypoint to cluster
+NOTE:  No server in K8S cluster is accessible from outside !!
+
+ [Proxy Server] ------------------------------------------------+
+                                                                | 
+                                                                v
+ [pod: mayapp] <- [svc: myapp] <- [ingress: myapp] <- [pod: ingress controller]
+
+
+## Minikube Ingress
+
+## Start the Ingress Controller 
+## 
+minikube addons enable ingress  # Starts K8s Nginx Ingress Controller
+
+minikube addons enable ingress
+💡  ingress is an addon maintained by Kubernetes. For any concerns contact minikube on GitHub.
+You can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS
+    ▪ Using image registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.4
+    ▪ Using image registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.4.4
+    ▪ Using image registry.k8s.io/ingress-nginx/controller:v1.11.3
+🔎  Verifying ingress addon...
+🌟  The 'ingress' addon is enabled
+
+# Here is ingress-nginx info
+kubens ingress-nginx
+✔ Active namespace is "ingress-nginx"
+
+kctl get pods
+NAME                                        READY   STATUS      RESTARTS   AGE
+ingress-nginx-admission-create-rlfhx        0/1     Completed   0          91s
+ingress-nginx-admission-patch-knw2v         0/1     Completed   0          91s
+ingress-nginx-controller-56d7c84fd4-5rg5t   1/1     Running     0          91s
+
+kctl get deployment
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+ingress-nginx-controller   1/1     1            1           100s
+
+kctl get service
+NAME                                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             NodePort    10.97.117.165   <none>        80:32342/TCP,443:32031/TCP   103s
+ingress-nginx-controller-admission   ClusterIP   10.107.37.144   <none>        443/TCP                      103s
+
+
+## Now create an Ingress Rule
+## 
+
+# Create an ingress to dashboard (so that an ingress rule can be configured ?)
+# (see democode/kubernetes-ingress/dashboard-ingress.yaml)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard-ingress
+  namespace: kubernetes-dashboard
+spec:
+  ingressClassName: "nginx"
+  rules:
+  - host: dashboard.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix  
+        backend:
+          service:
+            name: kubernetes-dashboard
+            port: 
+              number: 80
+
+kctl get ingress -n kubernetes-dashboard
+NAME                CLASS   HOSTS           ADDRESS        PORTS   AGE
+dashboard-ingress   nginx   dashboard.com   192.168.49.2   80      11s
+
+#NOTE add 192.168.49.2 dashboard to /etc/hosts then run  
+curl dashboard.com
+
+## describe the ingress 
+## 
+kctl describe ingress dashboard-ingress
+Name:             dashboard-ingress
+Labels:           <none>
+Namespace:        kubernetes-dashboard
+Address:          192.168.49.2
+Ingress Class:    nginx
+Default backend:  <default>
+Rules:
+  Host           Path  Backends
+  ----           ----  --------
+  dashboard.com  
+                 /   kubernetes-dashboard:80 (10.244.0.28:9090)
+Annotations:     <none>
+Events:
+  Type    Reason  Age                From                      Message
+  ----    ------  ----               ----                      -------
+  Normal  Sync    23m (x2 over 24m)  nginx-ingress-controller  Scheduled for sync
+
+NOTE: Default backend handles requests that are not mapped via path
+
+
+
+
+
 [ 2:01:53 ]
-
-
-
 Hashicorp Vault
 https://www.youtube.com/watch?v=klyAhaklGNU
 
