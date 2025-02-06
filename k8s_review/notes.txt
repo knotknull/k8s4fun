@@ -100,7 +100,7 @@ Internal Service:  No external access, service only for other k8s services / obj
         +---------------------------------+
 
 
-# ConfigMap / Secret
+## ConfigMap / Secret
 
 ConfigMap: external configuration of your application, connect to pod
            contains configuration information needed by app i.e. db connect string
@@ -117,7 +117,7 @@ Secret: like configmap but used to store secret data i.e. credentials / certific
     NOTE: built-in security mechanism is not enabled by default
 
 
-# Volumes
+## Volumes
 
 Volumes:  Persist data (logs, db, etc) beyond the life of a pod.
           Attaches physical hard drive storage to a pod
@@ -151,7 +151,7 @@ Volumes:  Persist data (logs, db, etc) beyond the life of a pod.
 NOTE: K8s Does Not Manage Data Persistence
 
 
-# Deployment / StatefulSet
+## Deployment / StatefulSet
 
 Deployment:  blueprint of a pod, specify how many replicas
         - Deployment is an abstraction on pods
@@ -431,17 +431,17 @@ Server Version: v1.32.0
 ## kubectl commands
 ######################################################################################
 
-# get status of nodes
+## get status of nodes
 kubectl get nodes
 NAME       STATUS   ROLES           AGE   VERSION
 minikube   Ready    control-plane   47h   v1.32.0
 
 
-# get pods (none deploye, hence no resources)
+## get pods (none deploye, hence no resources)
 kubectl get pods
 No resources found in default namespace.
 
-# get services 
+## get services 
 kubectl get services
 NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   47h
@@ -529,9 +529,9 @@ Everything below deployment is handeled by k8s
 Now let's edit the deployment 
 kubectl edit deployment nginx-dep           # provides and configuration file that represents the deployment
 
-# Please edit the object below. Lines beginning with a '#' will be ignored,
-# and an empty file will abort the edit. If an error occurs while saving this file will be
-# reopened with the relevant failures.
+## Please edit the object below. Lines beginning with a '#' will be ignored,
+## and an empty file will abort the edit. If an error occurs while saving this file will be
+## reopened with the relevant failures.
 #
 apiVersion: apps/v1
 kind: Deployment
@@ -626,7 +626,7 @@ HENCE, by make one change to the deployment, via the generated deployment file, 
 
 kubectl logs [pod name]
 
-# first let's create a deployment that will generate some logs
+## first let's create a deployment that will generate some logs
 kctl create deployment mong-deply --image=mongo
 deployment.apps/mong-deply created
 
@@ -676,7 +676,7 @@ ansible@minikube:~$ kctl logs mong-deply-659b9dd647-9wqtv
 ## Now Describe That Pod
 ######################################################################################
 
-# now describe the pod          NOTE: This shows alot of detail about pod
+## now describe the pod          NOTE: This shows alot of detail about pod
 kctl describe pod [pod name]
 
 kctl describe pod mong-deply-659b9dd647-9wqtv
@@ -981,7 +981,7 @@ template:
       ports: 
       - containerPort: 8080
 
-# connecting components:  labels and selectors and ports
+## connecting components:  labels and selectors and ports
 - labels and selectors make the "connection" between deployment and service 
   - metadata contains labels 
   - spec     contains selectors 
@@ -1050,7 +1050,7 @@ spec:                                   Service selector  +---->  app: nginx
                                  
 
 
-# Connecting Deployment to Pods
+## Connecting Deployment to Pods
   - component has a key value pair
   i.e.  labels:
           app: nginx   key/valu pair associated with component
@@ -1209,7 +1209,7 @@ status:
 
 
 
-# Can delete the Deployment and Service using the same yaml files 
+## Can delete the Deployment and Service using the same yaml files 
 
 kubectl delete -f nginx-deployment.yaml
 kubectl delete -f nginx-service.yaml
@@ -1240,7 +1240,7 @@ data:
     mongo-root-username: dXNlcm5hbWU=   <<--= BASE64 Encoded
     mongo-root-password: cGFzc3dvcmQ=   <<--= BASE64 Encoded
 
-# how to get base64
+## how to get base64
  echo -n 'username' | base64
 
 
@@ -1375,11 +1375,11 @@ To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 4. default
   - default location for creating resources 
 
-# Create a namespace via:
+## Create a namespace via:
   kubectl create namespace map-nmspace 
   kubectl get namespaces 
 
-# Create a namespace fia config file:
+## Create a namespace fia config file:
 
 mynamespace-configmap.yaml
 ------------------------------
@@ -1391,7 +1391,7 @@ metadata:
 data:
   db_url: mysql-service.database
 
-# Why use a namespace
+## Why use a namespace
 1. Organize resources
   - resources become unorganized quickly
   - allows for grouping of related resources
@@ -1495,7 +1495,7 @@ NOTE: K8s documentations states that SHOULD NOT use namespaces
                +----------------------k8s---------------------+
 
 
-# Characteristics of a Namespace
+## Characteristics of a Namespace
  - Can't access most resources from another Namespace
   - Each Namespace MUST DEFINE own ConfigMap
   - Each Namespace MUST DEFINE own Secret (even for shared service)
@@ -1528,7 +1528,7 @@ data:
                +----------------------k8s---------------------+
 
 
-# K8s Components NOT in namespace
+## K8s Components NOT in namespace
  - live globally in a cluster
  - can't isolate them
 
@@ -1545,7 +1545,7 @@ data:
                |                                              |
                +----------------------k8s---------------------+
 
-# list NON-namespaced resources
+## list NON-namespaced resources
 kubectl api-resource --namespaced=falee
 
 
@@ -1564,7 +1564,7 @@ storageclasses                      sc           storage.k8s.io/v1              
 volumeattachments                                storage.k8s.io/v1                 false        VolumeAttachment
 
 
-# list namespaced resources
+## list namespaced resources
 
 kctl api-resources --namespaced=true
 NAME                        SHORTNAMES   APIVERSION                     NAMESPACED   KIND
@@ -1656,10 +1656,10 @@ nsible@minikube:~/mongo_demo$ kubens map-nmspace
     |                                            |
     +--------------------------------------------+
 
-# YAML config external vs. ingress service 
+## YAML config external vs. ingress service 
 
-# external service YAML
-# 
+## external service YAML
+## 
 apiVersion: v1
 kind: Service                    <<------------------------------------------+
 metadata:                                                                    |
@@ -1675,8 +1675,8 @@ spec:                                                                        |
       nodePort: 35010     ## NOTE: the port of the node that will handle this traffic
 
 
-# Ingress service YAML
-# 
+## Ingress service YAML
+## 
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress                    <<---------+ ## NOTE:  Ingress Service with Routing Rules
 metadata:                                   |
@@ -1691,8 +1691,8 @@ spec:                                       |
           servicePort: 8080                               |
                                                           |
                                                           |
-# Internal Service config                                 +-------  Ingress backend.serviceName 
-#                                                         |                 backend.servicePort
+## Internal Service config                                 +-------  Ingress backend.serviceName 
+##                                                         |                 backend.servicePort
 apiVersion: v1                                            |          maps  
 kind: Service                                             |          to
 metadata:                                                 |            
@@ -1709,7 +1709,7 @@ spec:                                                               service.spec
 NOTE:  - ingress.spec.rules.host should be a valid domain address (myapp.com)
        - domain name SHOULD BE mapped to Node's IP address, which is the entry point   
 
-# Configuring Ingress in k8s cluster
+## Configuring Ingress in k8s cluster
 
 The below is not enough,  Need an "implementation" for Ingress >> Ingress Controller 
 
@@ -1720,22 +1720,22 @@ ingress controller: evaluates and processes Ingress rules
   - entrypoint to cluster 
   - many 3rd party implementations i.e. K8s Nginx Ingress Controller, etc
 
-# ingress controllers 
+## ingress controllers 
 https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/
 
-# bare metal ingress controller 
+## bare metal ingress controller 
   https://kubernetes.github.io/ingress-nginx/deploy/baremetal/
 
 
 Environment where k8s is running: 
 
-# Cloud Provider
+## Cloud Provider
  [Cloud Load Balancer] -----------------------------------------+
                                                                 | 
                                                                 v
  [pod: mayapp] <- [svc: myapp] <- [ingress: myapp] <- [pod: ingress controller]
 
-# Bare Metal:  Need to configure and entry point 
+## Bare Metal:  Need to configure and entry point 
                 - inside cluster or outside separate server
                 
 Proxy Server:  
@@ -1765,7 +1765,7 @@ You can view the list of minikube maintainers at: https://github.com/kubernetes/
 🔎  Verifying ingress addon...
 🌟  The 'ingress' addon is enabled
 
-# Here is ingress-nginx info
+## Here is ingress-nginx info
 kubens ingress-nginx
 ✔ Active namespace is "ingress-nginx"
 
@@ -1788,8 +1788,8 @@ ingress-nginx-controller-admission   ClusterIP   10.107.37.144   <none>        4
 ## Now create an Ingress Rule
 ## 
 
-# Create an ingress to dashboard (so that an ingress rule can be configured ?)
-# (see democode/kubernetes-ingress/dashboard-ingress.yaml)
+## Create an ingress to dashboard (so that an ingress rule can be configured ?)
+## (see democode/kubernetes-ingress/dashboard-ingress.yaml)
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -1839,10 +1839,255 @@ Events:
 NOTE: Default backend handles requests that are not mapped via path
 
 
+## Configure Default Backend in Ingress
+
+apiVersion: v1
+kind: Service         
+metadata:             
+  name: default-backend-service
+spec:                          
+  selector:                    
+    app: default-response-app                 
+  type: LoadBalancer      
+  ports:
+    - protocol: TCP  
+      port: 80
+      targetPport: 8080  
+
+## Multiple paths for the same host
+## one host, multiple services
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress                 
+metadata:                     
+  name: simple-fanout-example 
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:                         
+  rules:                                    
+  - host: myapp.com              
+    http:                        
+      paths:
+      - path: /analytics                      # http://myapp.com/analytics -->> analytics service -->> analytics pod
+      - backend:                 
+          serviceName: analytics-service
+          servicePort: 3000                    
+      - path: /shopping                       # http://myapp.com/shopping  -->> shopping service  -->> shopping  pod
+      - backend:                 
+          serviceName: shopping-service
+          servicePort: 8080                    
 
 
 
-[ 2:01:53 ]
+
+
+## Multiple sub-domains or domains
+## (i.e. multiple hosts)
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress                 
+metadata:                     
+  name: name-virtual-host-ingress 
+spec:                         
+  rules:                                    
+  - host: analytics.myapp.com              # http://analytics.myapp.com -->> analytics service -->> analytics pod
+    http:                        
+      paths:
+      - backend:                 
+          serviceName: analytics-service
+          servicePort: 3000                    
+  - host: shopping.myapp.com               # http://shopping.myapp.com/ -->> shopping service  -->> shopping  pod
+    http:                        
+      paths:
+      - path: 
+      - backend:                 
+          serviceName: shopping-service
+          servicePort: 8080                    
+
+
+## Configuring TLS Certificate
+
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress                 
+metadata:                     
+  name: tls-example-ingress 
+spec:
+  tls:                            -+     <----------- TLS Configuration                         
+  - hosts:                         |                  + same host as rules below
+    - myapp.com                    |-TLS config
+    secretName:  myapp-secret-tls -+     <----------- secret that holds certificate (see below)
+  rules:                                                                                  |
+  - host: myapp.com                                                                       |
+    http:                                                                                 |
+      paths:                                                                              |
+      - path: /                                                                           |
+      - backend:                                                                          |
+          serviceName: myapp-internal-service                                             |
+          servicePort: 8080                                                               |
+                                                                                          |
+apiVersion: v1                                                                            |
+kind: Secret                                                                              |
+metadata:                                                                                 |
+  name: myapp-secret-tls          <-------- Secret that was referred to in Ingress TLS ---+
+  namespace: default
+data:
+  tls.crt: [ actual base64 encoded cert ]                      
+  tls.key: [ actual base64 encoded key  ]                   
+type: kubernetes.io/tls
+
+NOTE:  
+ - data keys must be named tls.crt and tls.key
+ - values in data section are the actual file contents and NOT file paths
+ - Secret component must be in same namespace as Ingres component for Ingress to utilize
+CAN'T REFERENCE SECRET FROM ANOTHER NAMESPACE
+
+
+
+######################################################################################
+## Helm:  K8s Package Manager
+######################################################################################
+
+Helm:
+ - package manager for K8s (i.e. apt, yum)
+ - package YAML files and distribute in public / private repos 
+
+Example:  Adding Elastic Stack for Logging, requirements:
+ - Stateful Set (for db)
+ - ConfigMap
+ - Secret
+ - K8s User w/ Permissions
+ - Services
+
+All YAML files packaged and saved in repo
+   - i.e. Helm Chart
+   - Bundle of YAML Files
+   - Create your own Helm Chart with Help
+     - Push to Helm Repo
+   - Download / use existing ones
+
+i.e. 
+ - Databases: MongoDB, MySQL, Elasticsearch 
+ - Monitoring: Prometheus
+ - Helm Chart already exists
+
+search for helm chart i.e.
+ - helm search <keywork>
+ - helm hub (helm.sh)
+
+private registries
+
+Helm is also a Templating Engine
+
+i.e. You have multiple microservices whose template is nearly identical 
+     but for versioning or container, etc
+
+1. Define a common blueprint
+2. Dynamic values are replaced by placeholders
+
+
+## Template YAML config: 
+
+apiVersion: v1
+kind: Pod
+metadata: 
+  name: {{ .Values.name }}
+spec: 
+  containers:
+  - name: {{ .Values.container.name }}
+    image: {{ .Values.container.image }}
+    port: {{ .Values.container.port }}
+
+NOTE:  {{}} are variable placeholderers which are held in values.yaml or via --set flag
+values.yaml:
+-------------
+name: my-app                  >>   name: {{ .Values.name }}
+container: 
+  name: my-app-container      >>   - name: {{ .Values.container.name }}
+  image: my-app-image         >>     image: {{ .Values.container.image }}
+  port: 9001                  >>     port: {{ .Values.container.port }} 
+
+
+Practical for CI / CD
+Deploy same application across different environments: dev / stg / prod
+
+
+## Helm Chart Structure 
+Directory Structure:
+
+mychart/ 
+ Chart.yaml     # Meta information about chart: name, version, dependencies
+ values.yaml    # values for tamplate files (Default values that can be overriden)
+ charts/        # Chart dependencies stored here, if chart depends on another chart   
+ templates/     # template files
+
+NOTE: Can have additional files in folder: i.e. README, license, etc.
+
+helm install <chartname> 
+  - template files filled with values in values.yaml
+  - produces valued k8s manifest 
+
+## Values injection into template files
+
+
+values.yaml            my-values.yaml          >> Result
+imageName: myapp       version: 2.0.0             imageName: myapp          
+port: 8080                                        port: 8080
+version: 1.0.0                                    version: 2.0.0
+(default)              (override values values)  (merged to .Values object)
+
+Can overwrite default values.yaml via --values flag, i.e. 
+helm install --values=my-values.yaml <chartname>
+or 
+helm install --set version=2.0.0 <chartname>
+
+## Release Management 
+
+Helm Version 2 
+- comes in two parts: 
+1. Helm Client (helm CLI)
+2. Server (Tiller: runs in k8s cluster) 
+
+                                                         +-k8s-------------+ 
+                                                         |                 |
+[helm cli]  ----- helm install <chartname> ---------->   | Tiller          | 
+                  (sends request to TIller)              |                 |
+                                                         +-----------------+
+NOTE: Tiller saves copy of each config sent to it 
+      creates history of chart executions
+
+
+Revision  |    Request 
+------------------------------------
+    1     | Installed chart 
+    2     | Upgraded to v 1.0.0     # Changes applied to existing deployment 
+    3     | Rolled back to 1        # instead of creating a new one
+
+helm install  <chartname> 
+helm upgrade  <chartname> 
+helm rollback <chartname>       # Can rollback to prior version
+
+ISSUE:  Tiller has too many permissions inside cluster: CRUD 
+  - Security Issue
+
+Helm Version 3
+ - Tiller Removed 
+
+
+
+######################################################################################
+## Helm:  K8s Volumes
+######################################################################################
+
+
+[ 2:38:09 ]
+
+
+
+
+
+
+
 Hashicorp Vault
 https://www.youtube.com/watch?v=klyAhaklGNU
 
