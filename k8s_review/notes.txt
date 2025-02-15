@@ -2352,15 +2352,161 @@ SC = Storage Claim
 ######################################################################################
 
 
+StatefulSet: K8s component for stateful applications
+ - database
+ - applicatons that stores data
+
+stateless application
+ - deployed using Deployment 
+  - an abstraction of a pod
+ - can repliate application to many pods
 
 
 
-[ 2:58:37 ]
+Stateful application
+ - deployed using StatefulSet 
+ - can replicate pods
+ - can configure storage sameway as stateless
+
+
+Deployment vs. StatefulSet
+
+stateless: 
+  - identical and interchangeable
+  - created in random order w/ random hashes
+  - one Service that load balances to any Pod
+
+  my-app-f5c304e      my-app-fxc118b       my-app-36b80p
+  my-app              my-app               my-app 
+    |                   |                    |
+    +-------------------+--------------------+
+                        |
+                    [Service]    
 
 
 
+   ID-0         ID-1         ID-2
+  [mysql]      [mysql]      [mysql]
+
+stateful: 
+  - can't be created / deleted at the same time
+  - can't be randomly addressed
+  - replica Pods are NOT identical 
+    - Pod Identity
+    - stick idenity of reach pod
+  - created from same specification 
+    - NOT Interchangeable
+  - persistent identifier across any re-scheduling
+    - If a StatefulSet Pod dies, it get's rescheduled with the same Pod Identity
+
+In a StatefulSet environment, only ONE Pod can read and write, all others are readers only
+  - master node: reads / writes
+  - worker node: reads only
+  - this is to prevent data corruption
 
 
+StatefulSet pods to not have access to same physical sotrage.
+ - data is the same across three different physical storage allocations
+ - Workers must update from Master updates 
+
+When new worker is added: 
+ - clones data from previous pod
+ - once cloned, continuously syncs from master
+                                                                                        
+                                                                                       New StatefulSet Pod added 
+                                                                                        
+                                                                                |        
+        Master                     Worker                     Worker            |        Worker 
+      ┌─────────┐                ┌─────────┐                ┌─────────┐         |       ┌─────────┐
+      │ mysql-0 │                │ mysql-1 │                │ mysql-2 │         |       │ mysql-3 │ 
+      │         │                │         │                │         │         |       │         │ 
+      └─────────┘                └─────────┘                └─────────┘         |       └─────────┘ 
+       read/write                 read only                  read only          |        read only                                            
+          |                          |                          |               |           |
+          PV                         PV                         PV              |           PV              
+      ┌──────────┐               ┌──────────┐               ┌──────────┐        |       ┌──────────┐
+      │  data B  │               │  data B  │               │  data B  │<-------------->|  data B  │
+      │  data A  │               │  data A  │               │  data A  │<-------------->|  data A  │
+      └──────────┘               └──────────┘               └──────────┘        |  +    └──────────┘        
+     /data/vol/pv-0              /data/vol/pv-1             /data/vol/pv-2      |  |    /data/vol/pv-3 
+      [Pod State]                 [Pod State]                [Pod State]        |  |     [Pod State]    
+                                                                                |  |     
+                                                                                   +---- clones data from "previous" pod    
+Data will survive if all StatefuleSet pods die.
+ - If StatefulSet deployment is deleted 
+  - Persistent Volume data will remain
+
+NOTE: Persistent Volume lifecycle is not tied to other components 
+       (i.e. Deployment / StatefuleSet)
+
+Each pod has a Pod State:
+   - Identity state of that pod i.e (Master, Worker, etc)
+   - Pod State should be tied to Remote Storage
+    - local storage is usually tied to a specific node
+
+# Pod Identity
+- every pod has an identifier
+- fixed ordered name:  
+  $(statefulset name)-$(ordinal)
+  - mysql-0, mysql-1, mysql-2, etc.
+
+First node is Master the following are Workers by order of startup
+
+NOTE: Next Pod is only created when previous pod is running
+      Delete/ scaledown is opposite order
+
+If deleting or scaling down StatefulSet 
+
+
+# 2 Pod Endpoints for Statefule Sets
+
+
+mysql-0.svc2        mysql-1.svc2         mysql-2.svc2   <<-- individual service name 
+[-- svc --]         [-- svc --]          [-- svc --]         
+    |                    |                    |
+ [mysql-0]           [mysql-1]            [mysql-2]    <<-- StatefulSet pods
+ [  pod  ]           [  pod  ]            [  pod  ]
+    |                    |                    |
+    +--------------------+--------------------+
+                         |
+                       [svc1]    
+                         |
+        StatefulSet Load Balancer Service
+
+
+individual service name: ${pod name}.${governing service domain}
+
+
+2 main StatefuleSet characteristics
+ 1. predictable pod name      :  mysql-0
+ 2. fixed individual DNS name :  mysql-0.svc2
+
+NOTE: when StatefulSet pod restarts 
+  - IP address changes 
+  - name and endpoint stays the same
+  - pod retains state and role
+  HENCE: sticky identity, stays with pod despite restarts
+
+StatefulSets are complex:
+  - Need to configure cloning and data synchronization
+  - Make remote storage available
+  - Managing and backup
+  - NOTE ideal environment for Stateful applications
+
+
+
+                                                                                        
+
+######################################################################################
+## K8s Services explained
+######################################################################################
+                                                                                        
+                                                                                        
+                                                                                        
+                                                                                        
+
+
+[ 3:13:45 ]
 
 
 Hashicorp Vault
