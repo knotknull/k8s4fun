@@ -2291,7 +2291,7 @@ spec:
     - when PVC claims it
     - automated creation of PVs
 
-#Storage Class Yaml
+# Storage Class Yaml
 
 apiVersion: v1
 kind: StorageClass
@@ -2498,15 +2498,370 @@ StatefulSets are complex:
                                                                                         
 
 ######################################################################################
-## K8s Services explained
+## K8s Services 
 ######################################################################################
                                                                                         
-                                                                                        
-                                                                                        
-                                                                                        
+- ClusterIP Service
+- NodePort Service
+- LoadBalancer Service
+- Headless Service
 
 
-[ 3:13:45 ]
+Each pod has it's own IP address 
+  - pods are ephemeral                                                                                        
+  - restarted pod gets new IP
+                                                                                        
+Service provides a stable IP address (even when Pod dies)
+  - each pod has a service that represents a persistent IP 
+
+
+Service acts as a load balancer infront of pod replica sets 
+
+
+## ClusterIP Service
+
+ - default type of service
+ - used when kind: Service does not specifiy type
+
+kind: Service       << No type, hence default is ClusterIP
+metadata: 
+  name: microservice-one-service
+
+NOTE: ClusterIP only accessbile within cluster
+
+Pod gets IP address from a range that is assigned to a Node
+
+
+                                 Pod
+                           ┌──────────────┐
+                           │ microservice │::3000    ## Container port to get to service 
+                           │  sidecar     │::9000
+                           └──────────────┘ 
+                               10.2.2.5
+                                  |
+           ┌──────────┐      ┌──────────┐      ┌──────────┐
+           │  Node 1  │      │  Node 2  │      │  Node 3  │
+           │          │      │          │      │          │
+           └──────────┘      └──────────┘      └──────────┘ 
+IP Range:    10.2.1.x          10.2.2.x          10.2.3.x  
+
+
+To check pod IP addresses:
+kctl get pod -o wide
+NAME                                READY   STATUS    RESTARTS      AGE   IP           NODE     NOMINATED NODE   READINESS GATES
+fleet-controller-7fc9595f89-pmqhw   3/3     Running   6 (18d ago)   23d   10.42.4.10   node-2   <none>           <none>
+gitjob-776bdffc97-7qqk6             1/1     Running   3 (17d ago)   23d   10.42.5.12   node-3   <none>           <none>
+
+
+
+kctl get nodes -o wide
+NAME       STATUS   ROLES                       AGE   VERSION        INTERNAL-IP     EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION     CONTAINER-RUNTIME
+master-1   Ready    control-plane,etcd,master   23d   v1.30.2+k3s2   192.168.99.50   <none>        Ubuntu 24.04.1 LTS   6.8.0-52-generic   containerd://1.7.17-k3s1
+master-2   Ready    control-plane,etcd,master   23d   v1.30.2+k3s2   192.168.99.51   <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.17-k3s1
+master-3   Ready    control-plane,etcd,master   23d   v1.30.2+k3s2   192.168.99.52   <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.17-k3s1
+node-1     Ready    <none>                      23d   v1.30.2+k3s2   192.168.99.40   <none>        Ubuntu 24.04.1 LTS   6.8.0-52-generic   containerd://1.7.17-k3s1
+node-2     Ready    <none>                      23d   v1.30.2+k3s2   192.168.99.41   <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.17-k3s1
+node-3     Ready    <none>                      23d   v1.30.2+k3s2   192.168.99.42   <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.17-k3s1
+node-4     Ready    <none>                      23d   v1.30.2+k3s2   192.168.99.43   <none>        Ubuntu 24.04.1 LTS   6.8.0-51-generic   containerd://1.7.17-k3s1
+
+
+
+kctl get pod -o wide
+NAME                                READY   STATUS    RESTARTS      AGE   IP           NODE     NOMINATED NODE   READINESS GATES
+fleet-controller-7fc9595f89-pmqhw   3/3     Running   6 (18d ago)   23d   10.42.4.10   node-2   <none>           <none>
+gitjob-776bdffc97-7qqk6             1/1     Running   3 (17d ago)   23d   10.42.5.12   node-3   <none>           <none>
+
+
+                                      ClusterIP
+           ┌──────────┐             ┌───────────┐              ┌──────────┐
+           │  Node 2  │:3000 <--+---│  Service  │              │ Ingress  │
+           │          │:9000    |   │           │:3200 <------ │          │
+           └──────────┘         |   └───────────┘              └──────────┘ 
+             10.2.2.5           |
+                                |
+           ┌──────────┐         |
+           │  Node 1  │:3000 <--+ 
+           │          │:9000      
+           └──────────┘      
+             10.2.1.4          
+
+Ingress Deployment maps to ClusterIP service
+
+How is ClusterIP Service configured to pod / port 
+  - done via "selector"
+  - service defines it's endpoint pods via selector attribute
+  - targetPort attribute configures the endpoint port that service connects to
+    targetPort is the targeted port of the service TO THE POD
+
+
+# ClusterIP Serice: 
+
+apiVersion: v1
+kind: Service       
+metadata: 
+  name: microservice-one-service
+spec: 
+  selector: 
+    app: my-app                <---+    ## key value pairs that are defined on pods
+    type: microservice             |
+  ports:                           |
+    - protocol: TCP                |
+      port: 3200                   |
+      targetPort: 3000             |
+                                   |
+# Pod deployment                   |
+apiVersion: v1                     |
+kind: Deployment                   |
+metadata:                          |
+  name: microservice-one           +    ## pods labels match to selector key/value paris in Service
+  ...                              |    ## must match ALL selectors  
+spec:                              |
+  replicas: 2                      |
+  ...                              |
+  template:                        |
+    metadata:                      |
+      labels:                      |
+        app: my-app                |
+        type: my-app           <---+
+
+When a Service is created, k8s creates endpoint object which has same name of Service
+ - keeps track of the members / endpoints of the service
+
+kctl get endpoints
+NAME                          ENDPOINTS         AGE
+gitjob                        10.42.5.12:8080   23d
+monitoring-fleet-controller   10.42.4.10:8080   23d
+monitoring-gitjob             10.42.5.12:8081   23d
+
+
+NOTE: a pod can call out to a service via ClusterIP and port
+
+
+# Multi-Port Services
+Service that maps to multiple target ports.
+A multi-port Service needs to "name" each port (see belo)
+
+                                       ClusterIP
+           ┌──Node 2──┐              ┌───────────┐              
+           │  mongodb │:27017 <--+---│  Service  │:27017 <--[  app pod   ]
+           │ exporter │:9216  <--+   |           │:9216  <--[ prometheus ] 
+           └──────────┘          |   └───────────┘              
+             10.2.2.5            |
+                                 |
+           ┌──Node 1──┐          |
+           │  mongodb │:27017 <--+ 
+           │ exporter │:9216  <--+
+           └──────────┘      
+             10.2.1.4          
+
+
+apiVersion: v1
+kind: Service       
+metadata: 
+  name: mongodb-service
+  ...
+spec: 
+  selector: 
+    app: mongodb
+  ports:            
+    - name: mongodb                # Port Name for a multi-port service 
+      protocol: TCP  
+      port: 27017     
+      targetPort: 27017 
+    - name: mongodb-exporter       # Port Name for a multi-port service 
+      protocol: TCP  
+      port: 9216     
+      targetPort: 9216 
+                       
+
+## Headless Services
+
+ - client wants to communicate to 1 specific pod
+ - what if pod needs to talk directly to a specific pod
+
+use case:  stateful applications (i.e. databases)
+  - pod replicas are NOT identical, each has their own state
+   i.e. a newly added worker pod needs to sync data with most recent worker node
+    - you would have to go directly and not thru a service
+
+
+Client would need to figure out IP address of each Pod 
+  1. API call to K8s API server 
+      - too dependent on K8s API  / inefficient
+  2. Can discover Pod IP addr via DNS lookup
+      - DNS lookup for Service returns single ClusterIP addr of Service
+      - Set ClusterIP to "None": returns Pod IP address instead
+
+apiVersion: v1
+kind: Service       
+metadata: 
+  name: mongodb-service-headless
+  ...
+spec: 
+  clusterIP: None           ## DNS Service will return Pod IP Addr instead of Service IP Addr, this creates a headless service
+  selector: 
+    app: mongodb
+  ports:            
+    - name: mongodb
+      protocol: TCP  
+      port: 27017     
+      targetPort: 27017 
+
+kctl get svc
+NAME                          TYPE            CLUSTER-IP     EXTERNAL-IP   PORT(S)
+kubernetes                    ClusterIP       10.42.0.1       <none>       443/TCP
+mongodb-service               ClusterIP       10.42.204.105   <none>       27017/TCP   ClusterIP Service
+mongodb-service-headless      ClusterIP       None            <none>       27017/TCP   ClusterIP Headless
+
+
+
+## Service Type Attributes
+
+ClusterIP               NodePort                LoadBalancer
+apiVersion: v1          apiVersion: v1          apiVersion: v1
+kind: Service           kind: Service           kind: Service           
+metadata:               metadata:               metadata:
+  name: my-service        name: my-service         name: my-service  
+spec:                   spec:                   spec:
+  type: ClusterIP         type: NodePort          type: LoadBalancer
+
+
+## NodePort Service
+- creates service that is accessible on static port on 
+  each worker node in cluster
+
+- external traffic has access to fixed port on each Worker Node
+- request bypasses Ingress and access worker Node port directly 
+
+
+NOTE: ClusterIP only accessbile within cluster
+
+NodePort
+apiVersion: v1         
+kind: Service
+metadata:
+  name: my-service-nodeport
+spec:
+  type: NodePort
+  selector: 
+    app: microservice-one
+  ports:
+    - protocol: TCP 
+      port: 3200 
+      targetPort: 3000 
+      nodePort: 30008 
+
+
+NOTE: NodePort: 30000 - 32767 
+
+
+   ┌──Node 2──────────────────────────────────────────┐           
+   |                              ClusterIP           |
+   |  ┌──Pod─────┐              ┌───────────┐         |    
+   |  │          │:3000  <------│  Service  │:3200    |:30008    # nodePort
+   |  └──────────┘              └───────────┘         |  
+   |    10.2.2.5                 10.128.202.9         |
+   |                                                  | 
+   |                                                  |
+   └──────────────────────────────────────────────────┘      
+                       172.90.1.2
+
+kctl get svc
+NAME                          TYPE            CLUSTER-IP     EXTERNAL-IP   PORT(S)
+kubernetes                    ClusterIP       10.128.0.1       <none>       443/TCP
+mongodb-service               ClusterIP       10.128.204.105   <none>       27017/TCP   # ClusterIP Service
+mongodb-service-headless      ClusterIP       None             <none>       27017/TCP   # ClusterIP Headless
+ms-service-nodeport           NodePort        10.128.202.9     <none>       3200:30008  # NodePort
+
+
+So the NodePort: 
+ - has an IP addr of the Node
+ - a ClusterIP for the NodePort Service
+ - has a NodePort on the node for external traffic
+ - has a port for the NodePort Service
+ - has a targetPort for pod
+
+In Total:  3 ports and 2 IP Addrs
+
+
+NodePort Service spans all worker nodes
+NOTE: NodePort Services are NOT secure 
+
+
+  172.90.1.1:30008        172.90.1.2:30008          172.90.1.3:30008                           
+  ┌────────────┐          ┌────────────┐            ┌────────────┐            
+  │            │          │            │            │            │
+  │       ┌──10.128.202.9────────────────────3200─────────────┐  │
+  │       |           N O D E P O R T    S E R V I C E        |  │
+  │       └───────────────────────────────────────────────────┘  │
+  │            │          │            │            │            │
+  │            │          │            │            │            │
+  │ [POD]:3000 │          │ [POD]:3000 │            │ [POD]:3000 |
+  │  10.2.1.5  │          │  10.2.2.4  │            │  10.2.3.1  │
+  │            │          │            │            │            │
+  │ Node 1     │          │ Node 2     │            │ Node 3     │
+  └────────────┘          └────────────┘            └────────────┘            
+    
+
+## LoadBalancer Service
+ - accessible externally via cloud provider LoadBalancer
+  i.e. AWS, Azure, GCP, Linode, OpenStack, etc.
+
+ - NodePort and ClusterIP Service are created by k8s automatically 
+    - external cloud LoadBalancer will route traffic here
+
+  ┌────────────────────────────────────────────────────┐             
+  |                                                    |             ┌────────────────┐            
+  |   ┌──Pod 2──┐              ┌───────────┐           |             |                |
+  |   │  mongodb │:3000 <--+---│ ClusterIP │:3200      |:31000 <-----|  LoadBalancer  | 
+  |   └──────────┘         |   └───────────┘           |             |                |
+  |     10.2.2.2           |    10.128.233.22          |             └────────────────┘            
+  |                        |                           |
+  |   ┌──Pod 1──┐          |                           |
+  |   │  mongodb │:3000 <--+                           |
+  |   │ exporter │                                     |
+  |   └──────────┘                                     |
+  |     10.2.2.1                                       |
+  |                                                    |
+  └────────────────────────────────────────────────────┘            
+
+
+apiVersion: v1         
+kind: Service
+metadata:
+  name: my-service-loadbalancer
+spec:
+  type: LoadBalancer
+  selector: 
+    app: microservice-one
+  ports:
+    - protocol: TCP 
+      port: 3200 
+      targetPort: 3000 
+      nodePort: 30010         ## Accessible only via LoadBalancer, LoadBalancer is accessible Externally
+
+NOTE: 
+  - LoadBalancer Service is an extenstion of NodePort Service
+  - Node Port Service is an extension of ClusterIP Service
+
+
+kctl get svc
+NAME                          TYPE            CLUSTER-IP       EXTERNAL-IP    PORT(S)
+kubernetes                    ClusterIP       10.128.0.1       <none>         443/TCP
+mongodb-service               ClusterIP       10.128.204.105   <none>         27017/TCP   # ClusterIP Service
+mongodb-service-headless      ClusterIP       None             <none>         27017/TCP   # ClusterIP Headless
+ms-service-loadbalancer       LoadBalancer    10.128.233.22    172.104.255.5  3200:30010  # LoadBalancer
+ms-service-nodeport           NodePort        10.128.202.9     <none>         3200:30008  # NodePort
+
+
+NOTICE external IP set for LoadBalancer Service
+
+NOTE:  
+- NodePort Service NOT for external connection
+    - either Ingress or
+    - LoadBalancer (cloud)
+
+
 
 
 Hashicorp Vault
